@@ -142,7 +142,7 @@ class SignUpUI(ctk.CTk):
             height=40,
             fg_color="gray",
             hover_color="#555555",
-            command=self.go_back_login  # 🔥 FUNCTION
+            command=self.go_back_login  
         )
         self.cancel_btn.grid(row=9, column=0, columnspan=2, padx=10, pady=(0, 20), sticky="ew")
 

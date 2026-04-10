@@ -106,7 +106,7 @@ class LoginUI(ctk.CTk):
             self.center_frame,
             text="Login",
             height=40,
-            command=self.login_user  # 🔥 CONNECT
+            command=self.login_user 
         )
         self.login_button.pack(fill="x", pady=10)
 
@@ -142,10 +142,10 @@ class LoginUI(ctk.CTk):
         )
         self.signup_label.pack(pady=20)
 
-        # 🔥 MAKE IT CLICKABLE
+        
         self.signup_label.bind("<Button-1>", self.open_signup)
 
-    # 🔥 FUNCTION TO OPEN SIGN UP
+    #FUNCTION TO OPEN SIGN UP
     def open_signup(self, event):
         self.destroy()
         os.system("python sign_up_ui.py")
@@ -177,7 +177,7 @@ class LoginUI(ctk.CTk):
 
             messagebox.showinfo("Success", f"Logged in as {role}")
 
-             # 🔥 REDIRECT
+             
             self.destroy()
 
             if role == "customer":

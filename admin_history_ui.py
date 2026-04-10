@@ -10,12 +10,12 @@ class AdminHistoryUI(ctk.CTk):
         super().__init__()
 
         self.title("Admin Dashboard")
-        self.geometry("1300x700")  # 🔥 slightly bigger for proper fit
+        self.geometry("1300x700")  
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        # 🔥 FIXED COLUMN WIDTHS (WIDER)
+        
         self.column_specs = [
             ("ID", 100),
             ("Name", 220),

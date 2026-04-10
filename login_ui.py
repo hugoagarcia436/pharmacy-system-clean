@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from PIL import Image
 import os
+from session_utils import set_current_user
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -165,7 +166,7 @@ class LoginUI(ctk.CTk):
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT role FROM users WHERE username=? AND password=?",
+            "SELECT name, email, username, role FROM users WHERE username=? AND password=?",
             (username, password)
         )
 
@@ -173,7 +174,13 @@ class LoginUI(ctk.CTk):
         conn.close()
 
         if result:
-            role = result[0]
+            name, email, username, role = result
+            set_current_user({
+                "name": name,
+                "email": email,
+                "username": username,
+                "role": role
+            })
 
             messagebox.showinfo("Success", f"Logged in as {role}")
 

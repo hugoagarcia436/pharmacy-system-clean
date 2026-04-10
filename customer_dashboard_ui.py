@@ -1,6 +1,8 @@
 import customtkinter as ctk
 from PIL import Image
 import os
+import subprocess
+import sys
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -12,32 +14,27 @@ class CustomerDashboard(ctk.CTk):
 
         self.title("Customer Dashboard")
         self.geometry("1350x800")
+        self.image_refs = []
+        self.base_path = os.path.dirname(os.path.realpath(__file__))
 
-        base_path = os.path.dirname(os.path.realpath(__file__))
-        img_path = os.path.join(base_path, "assets", "images")
+        img_path = os.path.join(self.base_path, "assets", "images")
 
-        # ================= ROOT =================
         self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        # ================= HEADER =================
         header = ctk.CTkFrame(self, height=70)
         header.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 0))
         header.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(header, text="Pharmacy+", font=("Arial", 20, "bold")).grid(row=0, column=0, padx=15)
+        ctk.CTkEntry(header, placeholder_text="Search products...", height=40).grid(row=0, column=1, sticky="ew", padx=20)
+        ctk.CTkButton(header, text="Dashboard", command=self.open_dashboard).grid(row=0, column=2, padx=5)
+        ctk.CTkButton(header, text="Orders", command=self.open_orders).grid(row=0, column=3, padx=5)
+        ctk.CTkButton(header, text="My Cart", command=self.open_cart).grid(row=0, column=4, padx=5)
+        ctk.CTkButton(header, text="Account", command=self.open_account).grid(row=0, column=5, padx=10)
 
-        search = ctk.CTkEntry(header, placeholder_text="Search products...", height=40)
-        search.grid(row=0, column=1, sticky="ew", padx=20)
-
-        ctk.CTkButton(header, text="Orders").grid(row=0, column=2, padx=5)
-        ctk.CTkButton(header, text="My Cart 🛒").grid(row=0, column=3, padx=5)
-        ctk.CTkButton(header, text="Account").grid(row=0, column=4, padx=10)
-
-        # ================= HERO =================
         hero = ctk.CTkFrame(self, height=180, fg_color="#1f6feb")
         hero.grid(row=1, column=0, sticky="ew", padx=10, pady=10)
-
         hero.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(
@@ -51,89 +48,101 @@ class CustomerDashboard(ctk.CTk):
             light_image=Image.open(os.path.join(img_path, "promo.png")),
             size=(300, 120)
         )
-
+        self.image_refs.append(promo_img)
         ctk.CTkLabel(hero, image=promo_img, text="").grid(row=0, column=1, padx=20)
 
-        # ================= GRID =================
-        main = ctk.CTkFrame(self)
+        main = ctk.CTkScrollableFrame(self)
         main.grid(row=2, column=0, sticky="nsew", padx=10, pady=10)
 
-        for i in range(4):
+        for i in range(3):
             main.grid_columnconfigure(i, weight=1)
 
-        # ---------- BOX FUNCTION ----------
-        def create_box(parent, row, col, title, images):
+        def create_box(parent, row, col, title, image_file, command=None, subtitle=None):
             box = ctk.CTkFrame(parent, corner_radius=10)
             box.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+            box.grid_columnconfigure(0, weight=1)
 
-            ctk.CTkLabel(
-                box,
-                text=title,
-                font=("Arial", 16, "bold")
-            ).pack(anchor="w", padx=10, pady=10)
+            title_label = ctk.CTkLabel(box, text=title, font=("Arial", 16, "bold"))
+            title_label.pack(anchor="w", padx=10, pady=(10, 6))
 
-            grid = ctk.CTkFrame(box, fg_color="transparent")
-            grid.pack()
+            subtitle_label = None
+            if subtitle:
+                subtitle_label = ctk.CTkLabel(
+                    box,
+                    text=subtitle,
+                    text_color="gray",
+                    justify="left",
+                    wraplength=250
+                )
+                subtitle_label.pack(anchor="w", padx=10, pady=(0, 8))
 
-            # 2x2 image grid
-            for i in range(2):
-                grid.grid_rowconfigure(i, weight=1)
-                grid.grid_columnconfigure(i, weight=1)
+            img = ctk.CTkImage(
+                light_image=Image.open(os.path.join(img_path, image_file)),
+                size=(290, 185)
+            )
+            self.image_refs.append(img)
+            image_label = ctk.CTkLabel(box, image=img, text="")
+            image_label.pack(padx=10, pady=(0, 10))
 
-            idx = 0
-            for r in range(2):
-                for c in range(2):
-                    if idx < len(images):
-                        img = ctk.CTkImage(
-                            light_image=Image.open(os.path.join(img_path, images[idx])),
-                            size=(120, 90)
-                        )
-                        ctk.CTkLabel(grid, image=img, text="").grid(row=r, column=c, padx=5, pady=5)
-                        idx += 1
+            if command is not None:
+                widgets = [box, title_label, image_label]
+                if subtitle_label is not None:
+                    widgets.append(subtitle_label)
 
-        # ---------- ROW 1 ----------
-        create_box(main, 0, 0, "Manage Prescriptions", [
-            "banner_main.png", "info.png", "promo.png", "travel.png"
-        ])
+                for widget in widgets:
+                    widget.bind("<Button-1>", lambda event, action=command: action())
+                    widget.configure(cursor="hand2")
 
-        create_box(main, 0, 1, "Health & Wellness", [
-            "vaccine.png", "travel.png", "info.png", "promo.png"
-        ])
+        ctk.CTkLabel(
+            main,
+            text="Shop by Category",
+            font=("Arial", 22, "bold")
+        ).grid(row=0, column=0, columnspan=3, sticky="w", padx=10, pady=(10, 5))
 
-        create_box(main, 0, 2, "Best Deals", [
-            "promo.png", "vaccine.png", "banner_main.png", "info.png"
-        ])
-
-        # ---------- SIGN IN BOX ----------
-        sign_box = ctk.CTkFrame(main, corner_radius=10)
-        sign_box.grid(row=0, column=3, padx=10, pady=10, sticky="nsew")
-
-        ctk.CTkLabel(sign_box, text="Sign in for the best experience", font=("Arial", 16, "bold")).pack(pady=20)
-
-        ctk.CTkButton(sign_box, text="Sign In Securely", width=200).pack(pady=10)
-
-        # ---------- ROW 2 ----------
-        create_box(main, 1, 0, "Seasonal Care", [
-            "info.png", "vaccine.png", "travel.png", "promo.png"
-        ])
-
-        create_box(main, 1, 1, "Travel Essentials", [
-            "travel.png", "banner_main.png", "info.png", "promo.png"
-        ])
-
-        create_box(main, 1, 2, "Pharmacy Picks", [
-            "banner_main.png", "promo.png", "vaccine.png", "info.png"
-        ])
-
-        ad_box = ctk.CTkFrame(main, corner_radius=10)
-        ad_box.grid(row=1, column=3, padx=10, pady=10, sticky="nsew")
-
-        ad_img = ctk.CTkImage(
-            light_image=Image.open(os.path.join(img_path, "promo.png")),
-            size=(250, 150)
+        create_box(
+            main, 1, 0, "Medicine", "info.png",
+            command=lambda: self.open_section("medicine_ui.py"),
+            subtitle="Prescription support and everyday medicines."
+        )
+        create_box(
+            main, 1, 1, "Travel", "travel.png",
+            command=lambda: self.open_section("travel_ui.py"),
+            subtitle="Travel-size products and on-the-go essentials."
+        )
+        create_box(
+            main, 1, 2, "Cosmetic", "promo.png",
+            command=lambda: self.open_section("cosmetic_ui.py"),
+            subtitle="Skin care and beauty picks for daily use."
+        )
+        create_box(
+            main, 2, 0, "Personal Care", "banner_main.png",
+            command=lambda: self.open_section("personal_ui.py"),
+            subtitle="Hygiene and self-care products in one place."
+        )
+        create_box(
+            main, 2, 1, "First Aid", "vaccine.png",
+            command=lambda: self.open_section("firstaid_ui.py"),
+            subtitle="Quick-access first aid basics for home and travel."
         )
 
-        ctk.CTkLabel(ad_box, image=ad_img, text="").pack(pady=10)
+    def open_section(self, filename):
+        subprocess.Popen([sys.executable, os.path.join(self.base_path, filename)])
+        self.destroy()
+
+    def open_orders(self):
+        subprocess.Popen([sys.executable, os.path.join(self.base_path, "customer_orders_ui.py")])
+        self.destroy()
+
+    def open_dashboard(self):
+        pass
+
+    def open_cart(self):
+        subprocess.Popen([sys.executable, os.path.join(self.base_path, "cart_ui.py")])
+        self.destroy()
+
+    def open_account(self):
+        subprocess.Popen([sys.executable, os.path.join(self.base_path, "customer_account_ui.py")])
+        self.destroy()
 
 
 if __name__ == "__main__":

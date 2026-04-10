@@ -1,15 +1,26 @@
 import customtkinter as ctk
+import json
+import os
 from datetime import datetime
+from inventory_ui import InventoryUI
+from employees_ui import EmployeesUI
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
+
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+ORDERS_FILE = os.path.join(BASE_DIR, "customer_orders_data.json")
+SIDEBAR_COLOR = "#161b31"
+BUTTON_COLOR = "#2f66db"
+BUTTON_HOVER = "#3a73e3"
+ACTIVE_BUTTON = "#4b83e7"
 
 
 class AdminDashboard(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Admin Dashboard")
+        self.title("Employee Dashboard")
         self.geometry("1200x700")
 
         # ========== LAYOUT ==========
@@ -18,16 +29,17 @@ class AdminDashboard(ctk.CTk):
         self.grid_rowconfigure(0, weight=1)
 
         # ========== SIDEBAR ==========
-        self.sidebar = ctk.CTkFrame(self, width=200)
+        self.sidebar = ctk.CTkFrame(self, width=240, fg_color=SIDEBAR_COLOR)
         self.sidebar.grid(row=0, column=0, sticky="ns")
+        self.sidebar.grid_propagate(False)
 
-        ctk.CTkLabel(self.sidebar, text="ADMIN", font=("Arial", 20, "bold")).pack(pady=20)
+        ctk.CTkLabel(self.sidebar, text="EMPLOYEE", font=("Arial", 20, "bold")).pack(pady=(28, 28))
 
-        ctk.CTkButton(self.sidebar, text="Dashboard").pack(pady=10, padx=10, fill="x")
-        ctk.CTkButton(self.sidebar,text="Inventory",command=self.open_inventory).pack(pady=10, 
-        padx=10, fill="x")
-        ctk.CTkButton(self.sidebar, text="Orders").pack(pady=10, padx=10, fill="x")
-        ctk.CTkButton(self.sidebar, text="Employees").pack(pady=10, padx=10, fill="x")
+        self.create_sidebar_button("Dashboard", active=True)
+        self.create_sidebar_button("Inventory", self.open_inventory)
+        self.create_sidebar_button("Orders", self.open_orders)
+        self.create_sidebar_button("Employees", self.open_employees)
+        self.create_sidebar_button("History", self.open_history)
 
         # ========== MAIN AREA ==========
         self.main_frame = ctk.CTkFrame(self)
@@ -37,10 +49,11 @@ class AdminDashboard(ctk.CTk):
         self.main_frame.grid_rowconfigure((0, 1, 2), weight=1)
 
         # ========== TOP STATS ==========
-        self.create_stat_card("Total Orders", "128", 0, 0)
-        self.create_stat_card("Pending Orders", "12", 0, 1)
-        self.create_stat_card("Revenue Today", "$2,340", 1, 0)
-        self.create_stat_card("Low Stock Items", "6", 1, 1)
+        stats = self.load_order_stats()
+        self.create_stat_card("Total Orders", str(stats["total_orders"]), 0, 0)
+        self.create_stat_card("Pending Orders", str(stats["pending_orders"]), 0, 1)
+        self.create_stat_card("Revenue", f"${stats['revenue']:.2f}", 1, 0)
+        self.create_stat_card("Delivered Orders", str(stats["delivered_orders"]), 1, 1)
 
         # ========== ORDER TABLE ==========
         self.orders_frame = ctk.CTkFrame(self.main_frame)
@@ -76,44 +89,109 @@ class AdminDashboard(ctk.CTk):
         ctk.CTkLabel(frame, text=title, font=("Arial", 14)).pack(anchor="w", padx=10, pady=(10, 0))
         ctk.CTkLabel(frame, text=value, font=("Arial", 24, "bold")).pack(anchor="w", padx=10, pady=(0, 10))
 
+    def create_sidebar_button(self, text, command=None, active=False):
+        ctk.CTkButton(
+            self.sidebar,
+            text=text,
+            height=42,
+            fg_color=ACTIVE_BUTTON if active else BUTTON_COLOR,
+            hover_color=BUTTON_HOVER,
+            corner_radius=8,
+            command=command
+        ).pack(fill="x", padx=18, pady=8)
+
     # ========== LOAD ORDERS ==========
     def load_orders(self):
-        # SAMPLE DATA (replace later with database)
-        orders = [
-            {"id": "1001", "customer": "John Doe", "total": "$45.00", "status": "Completed"},
-            {"id": "1002", "customer": "Maria Lopez", "total": "$120.00", "status": "Pending"},
-            {"id": "1003", "customer": "Carlos Ruiz", "total": "$75.00", "status": "Completed"},
-            {"id": "1004", "customer": "Ana Torres", "total": "$33.00", "status": "Pending"},
-        ]
+        orders = self.read_customer_orders()[:6]
+
+        if not orders:
+            ctk.CTkLabel(self.orders_table, text="No customer orders found.", text_color="gray").pack(anchor="w", padx=10, pady=10)
+            return
 
         for order in orders:
             row = ctk.CTkFrame(self.orders_table)
             row.pack(fill="x", pady=5)
 
-            ctk.CTkLabel(row, text=f"#{order['id']}", width=80).pack(side="left", padx=5)
-            ctk.CTkLabel(row, text=order["customer"], width=150).pack(side="left", padx=5)
-            ctk.CTkLabel(row, text=order["total"], width=100).pack(side="left", padx=5)
-            ctk.CTkLabel(row, text=order["status"], width=100).pack(side="left", padx=5)
+            ctk.CTkLabel(row, text=order.get("purchase_id", "N/A"), width=110).pack(side="left", padx=5)
+            ctk.CTkLabel(row, text=order.get("customer", {}).get("full_name", "Unknown"), width=180).pack(side="left", padx=5)
+            ctk.CTkLabel(row, text=f"${order.get('summary', {}).get('total', 0):.2f}", width=100).pack(side="left", padx=5)
+            ctk.CTkLabel(row, text=order.get("status", "N/A"), width=100).pack(side="left", padx=5)
 
-            ctk.CTkButton(row, text="View", width=60, command=lambda o=order: self.view_order(o)).pack(side="right", padx=5)
+            ctk.CTkButton(
+                row,
+                text="View",
+                width=60,
+                command=lambda o=order: self.view_order(o)
+            ).pack(side="right", padx=5)
+
+    def read_customer_orders(self):
+        if not os.path.exists(ORDERS_FILE):
+            return []
+        try:
+            with open(ORDERS_FILE, "r", encoding="utf-8") as orders_file:
+                orders = json.load(orders_file)
+        except (json.JSONDecodeError, OSError):
+            return []
+        return sorted(orders, key=lambda order: order.get("purchase_id", ""), reverse=True)
+
+    def load_order_stats(self):
+        orders = self.read_customer_orders()
+        return {
+            "total_orders": len(orders),
+            "pending_orders": sum(1 for order in orders if order.get("status") == "Processing"),
+            "delivered_orders": sum(1 for order in orders if order.get("status") == "Delivered"),
+            "revenue": sum(order.get("summary", {}).get("total", 0) for order in orders),
+        }
 
     # ========== VIEW ORDER ==========
     def view_order(self, order):
         popup = ctk.CTkToplevel(self)
-        popup.title(f"Order #{order['id']}")
-        popup.geometry("400x300")
+        popup.title(order.get("purchase_id", "Order"))
+        popup.geometry("480x420")
 
-        ctk.CTkLabel(popup, text=f"Order ID: {order['id']}").pack(pady=5)
-        ctk.CTkLabel(popup, text=f"Customer: {order['customer']}").pack(pady=5)
-        ctk.CTkLabel(popup, text=f"Total: {order['total']}").pack(pady=5)
-        ctk.CTkLabel(popup, text=f"Status: {order['status']}").pack(pady=5)
+        customer = order.get("customer", {})
+        summary = order.get("summary", {})
 
-        ctk.CTkButton(popup, text="Print Receipt").pack(pady=20)
+        details = [
+            f"Purchase ID: {order.get('purchase_id', 'N/A')}",
+            f"Customer: {customer.get('full_name', 'Unknown')}",
+            f"Date: {order.get('date', 'N/A')}",
+            f"Payment Method: {customer.get('payment_method', 'N/A')}",
+            f"Status: {order.get('status', 'N/A')}",
+            f"Total: ${summary.get('total', 0):.2f}",
+        ]
 
+        for line in details:
+            ctk.CTkLabel(popup, text=line).pack(anchor="w", padx=20, pady=6)
+
+        ctk.CTkLabel(popup, text="Items", font=("Arial", 16, "bold")).pack(anchor="w", padx=20, pady=(14, 6))
+        for item in order.get("items", []):
+            ctk.CTkLabel(
+                popup,
+                text=f"{item.get('name', 'Item')} x{item.get('qty', 0)}  ${item.get('price', 0):.2f}"
+            ).pack(anchor="w", padx=20, pady=3)
+
+    # ========== NAVIGATION ==========
+  
+  
     def open_inventory(self):
         self.destroy()
         import os
-        os.system("python admin_dashboard_ui.py")
+        os.system("python inventory_ui.py")
+  
+  
+    def open_orders(self):
+        self.destroy()
+        os.system("python order_ui.py")
+
+    def open_employees(self):
+        self.destroy()
+        os.system("python employees_ui.py")
+              
+    def open_history(self):
+        self.destroy()
+        os.system("python admin_history_ui.py")   
+
 
 if __name__ == "__main__":
     app = AdminDashboard()

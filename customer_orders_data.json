@@ -1,0 +1,61 @@
+[
+  {
+    "purchase_id": "PUR-1001",
+    "status": "Processing",
+    "date": "April 10, 2026",
+    "customer": {
+      "full_name": "Hugo Hernandez",
+      "phone": "956 908 1814",
+      "email": "hugoeg436@gmail.com",
+      "city": "Brownsville",
+      "address": "Delivery Address hufsosdjfl slkdfj 1234",
+      "payment_method": "Cash on Delivery",
+      "card_name": "Capital One"
+    },
+    "notes": "Order notes",
+    "items": [
+      {
+        "id": 6,
+        "name": "Allergy Pills",
+        "price": 11.0,
+        "qty": 2,
+        "image": "medicine.png"
+      }
+    ],
+    "summary": {
+      "subtotal": 22.0,
+      "tax": 1.54,
+      "total": 23.54
+    }
+  },
+  {
+    "purchase_id": "PUR-1002",
+    "status": "Processing",
+    "date": "April 10, 2026",
+    "customer": {
+      "full_name": "Hugo Hernandez",
+      "phone": "956 908 1814",
+      "email": "hugo321@gmail.com",
+      "city": "Brownsville",
+      "address": "Delivery Address 123 123sadfad",
+      "payment_method": "Cash on Delivery",
+      "card_name": "Capital One",
+      "username": "hugo321@"
+    },
+    "notes": "Order notes",
+    "items": [
+      {
+        "id": 6,
+        "name": "Allergy Pills",
+        "price": 11.0,
+        "qty": 2,
+        "image": "medicine.png"
+      }
+    ],
+    "summary": {
+      "subtotal": 22.0,
+      "tax": 1.54,
+      "total": 23.54
+    }
+  }
+]

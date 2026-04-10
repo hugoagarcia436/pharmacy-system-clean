@@ -185,15 +185,15 @@ class SignUpUI(ctk.CTk):
 
         # 🔥 EMPLOYEE VALIDATION
         if role == "employee":
-            key = self.employee_key.get()
+            key = self.employee_key.get().strip()
 
-        if key == "":
-            messagebox.showerror("Error", "Employee key is required")
-            return
+            if key == "":
+                messagebox.showerror("Error", "Employee key is required")
+                return
 
-        if key != self.EMPLOYEE_KEY:
-            messagebox.showerror("Error", "Invalid employee key")
-            return
+            if key != self.EMPLOYEE_KEY:
+                messagebox.showerror("Error", "Invalid employee key")
+                return
 
         # Check duplicate username
         self.cursor.execute("SELECT * FROM users WHERE username=?", (username,))

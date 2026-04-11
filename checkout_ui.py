@@ -293,36 +293,37 @@ class CheckoutUI(ctk.CTk):
         self.open_orders()
 
     def prefill_checkout_details(self):
-        if not self.saved_details:
-            if self.current_user.get("name"):
-                self.full_name.insert(0, self.current_user.get("name", ""))
-            if self.current_user.get("email"):
-                self.email.insert(0, self.current_user.get("email", ""))
-            self.address.delete("1.0", "end")
-            self.address.insert("1.0", "Delivery Address")
-            self.notes.delete("1.0", "end")
-            self.notes.insert("1.0", "Order notes")
-            return
+        self.reset_checkout_form()
 
-        self.full_name.insert(0, self.saved_details.get("full_name", self.current_user.get("name", "")))
-        self.phone.insert(0, self.saved_details.get("phone", ""))
-        self.email.insert(0, self.saved_details.get("email", self.current_user.get("email", "")))
-        self.city.insert(0, self.saved_details.get("city", ""))
+    def clear_entry(self, widget):
+        widget.delete(0, "end")
+
+    def set_entry_value(self, widget, value):
+        self.clear_entry(widget)
+        if value:
+            widget.insert(0, value)
+
+    def reset_checkout_form(self):
+        self.set_entry_value(self.full_name, self.current_user.get("name", ""))
+        self.clear_entry(self.phone)
+        self.set_entry_value(self.email, self.current_user.get("email", ""))
+        self.clear_entry(self.city)
+        self.clear_entry(self.payment_profile_name)
+        self.payment_method.set("Cash on Delivery")
 
         self.address.delete("1.0", "end")
-        self.address.insert("1.0", self.saved_details.get("address", ""))
+        self.address.insert("1.0", "Delivery Address")
 
-        payment_method = self.saved_details.get("payment_method")
-        if payment_method:
-            self.payment_method.set(payment_method)
-
-        self.card_name.insert(0, self.saved_details.get("card_name", ""))
-        self.card_number.insert(0, self.saved_details.get("card_number", ""))
-        self.expiry.insert(0, self.saved_details.get("expiry", ""))
-        self.cvv.insert(0, self.saved_details.get("cvv", ""))
+        self.clear_entry(self.card_name)
+        self.clear_entry(self.card_number)
+        self.clear_entry(self.expiry)
+        self.clear_entry(self.cvv)
 
         self.notes.delete("1.0", "end")
         self.notes.insert("1.0", "Order notes")
+
+        if hasattr(self, "saved_payment_menu"):
+            self.saved_payment_menu.set("Select Saved Payment")
 
     def save_payment_method(self):
         profile_name = self.payment_profile_name.get().strip()
@@ -350,34 +351,25 @@ class CheckoutUI(ctk.CTk):
 
     def apply_saved_payment_method(self, selected_name):
         if selected_name == "Select Saved Payment":
+            self.reset_checkout_form()
             return
 
         details = self.payment_profiles.get(selected_name)
         if not details:
             return
 
-        self.payment_profile_name.delete(0, "end")
-        self.payment_profile_name.insert(0, selected_name)
-
-        self.full_name.delete(0, "end")
-        self.full_name.insert(0, details.get("full_name", ""))
-        self.phone.delete(0, "end")
-        self.phone.insert(0, details.get("phone", ""))
-        self.email.delete(0, "end")
-        self.email.insert(0, details.get("email", ""))
-        self.city.delete(0, "end")
-        self.city.insert(0, details.get("city", ""))
+        self.set_entry_value(self.payment_profile_name, selected_name)
+        self.set_entry_value(self.full_name, details.get("full_name", ""))
+        self.set_entry_value(self.phone, details.get("phone", ""))
+        self.set_entry_value(self.email, details.get("email", ""))
+        self.set_entry_value(self.city, details.get("city", ""))
         self.address.delete("1.0", "end")
         self.address.insert("1.0", details.get("address", ""))
         self.payment_method.set(details.get("payment_method", "Cash on Delivery"))
-        self.card_name.delete(0, "end")
-        self.card_name.insert(0, details.get("card_name", ""))
-        self.card_number.delete(0, "end")
-        self.card_number.insert(0, details.get("card_number", ""))
-        self.expiry.delete(0, "end")
-        self.expiry.insert(0, details.get("expiry", ""))
-        self.cvv.delete(0, "end")
-        self.cvv.insert(0, details.get("cvv", ""))
+        self.set_entry_value(self.card_name, details.get("card_name", ""))
+        self.set_entry_value(self.card_number, details.get("card_number", ""))
+        self.set_entry_value(self.expiry, details.get("expiry", ""))
+        self.set_entry_value(self.cvv, details.get("cvv", ""))
 
     def open_orders(self):
         subprocess.Popen([sys.executable, os.path.join(BASE_DIR, "customer_orders_ui.py")])

@@ -211,6 +211,7 @@ class CartUI(ctk.CTk):
 
     def open_checkout(self):
         subprocess.Popen([sys.executable, os.path.join(BASE_DIR, "checkout_ui.py")])
+        self.destroy()
 
     def open_dashboard(self):
         subprocess.Popen([sys.executable, os.path.join(BASE_DIR, "customer_dashboard_ui.py")])

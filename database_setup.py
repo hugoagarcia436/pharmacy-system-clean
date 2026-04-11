@@ -1,4 +1,5 @@
 import sqlite3
+from category_utils import repair_inventory_categories
 
 # Connect (creates file if it doesn't exist)
 conn = sqlite3.connect("app_data.db")
@@ -166,6 +167,8 @@ if count == 0:
     INSERT INTO inventory (name, price, stock, sold, total_stock, updated, status, category)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, sample_data)
+
+repair_inventory_categories(cursor)
 
 # =========================
 # SAVE & CLOSE

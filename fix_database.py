@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from category_utils import repair_inventory_categories
 print("FIXING DB:", os.path.abspath("app_data.db"))
 
 conn = sqlite3.connect("app_data.db")
@@ -12,8 +13,8 @@ try:
 except:
     print("⚠️ category column already exists")
 
-# Update old rows
-cursor.execute("UPDATE inventory SET category='Medicine' WHERE category IS NULL")
+# Update old rows safely using known product-category mappings
+repair_inventory_categories(cursor)
 
 conn.commit()
 conn.close()

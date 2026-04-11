@@ -1,10 +1,9 @@
 import customtkinter as ctk
 import sqlite3
-from PIL import Image
 import os
-import json
 import subprocess
 import sys
+from category_utils import get_category_where_values, repair_inventory_categories
 from session_utils import load_user_cart, save_user_cart
 
 print("USING DB:", os.path.abspath("app_data.db"))
@@ -12,15 +11,10 @@ print("USING DB:", os.path.abspath("app_data.db"))
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-PERSONAL_ITEMS = (
-    "Hand Sanitizer",
-    "Body Lotion",
-    "Shampoo",
-    "Conditioner",
-    "Toothpaste",
-    "Mouthwash",
-)
+PAGE_CATEGORY = "Personal"
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+SIDEBAR_ITEM_WIDTH = 150
+TABLE_COLUMN_WIDTHS = [80, 320, 100, 90, 90, 110]
 
 
 class PersonalUI(ctk.CTk):
@@ -32,6 +26,8 @@ class PersonalUI(ctk.CTk):
 
         self.conn = sqlite3.connect("app_data.db")
         self.cursor = self.conn.cursor()
+        repair_inventory_categories(self.cursor)
+        self.conn.commit()
 
         self.cart = {}
 
@@ -45,23 +41,39 @@ class PersonalUI(ctk.CTk):
         sidebar.grid(row=1, column=0, sticky="ns", padx=(10, 0), pady=10)
         sidebar.grid_propagate(False)
 
-        ctk.CTkLabel(
-            sidebar,
+        sidebar_content = ctk.CTkFrame(sidebar, fg_color="transparent")
+        sidebar_content.pack(fill="x", padx=20, pady=20)
+
+        ctk.CTkButton(
+            sidebar_content,
             text="Personal Care",
-            font=ctk.CTkFont(size=18, weight="bold")
-        ).pack(pady=20)
+            font=ctk.CTkFont(size=18, weight="bold"),
+            width=SIDEBAR_ITEM_WIDTH,
+            height=28,
+            anchor="w",
+            fg_color="transparent",
+            hover=False,
+            state="disabled",
+            text_color_disabled="white",
+            border_width=0,
+            corner_radius=0
+        ).pack(anchor="w", pady=(0, 24))
 
         ctk.CTkButton(
-            sidebar,
+            sidebar_content,
             text="Checkout",
-            command=self.checkout
-        ).pack(pady=10, padx=10, fill="x")
+            command=self.checkout,
+            anchor="w",
+            width=SIDEBAR_ITEM_WIDTH
+        ).pack(anchor="w", pady=(0, 12))
 
         ctk.CTkButton(
-            sidebar,
+            sidebar_content,
             text="Back to Dashboard",
-            command=self.go_to_dashboard
-        ).pack(pady=10, padx=10, fill="x")
+            command=self.go_to_dashboard,
+            anchor="w",
+            width=SIDEBAR_ITEM_WIDTH
+        ).pack(anchor="w")
 
         self.content = ctk.CTkScrollableFrame(self)
         self.content.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
@@ -86,26 +98,27 @@ class PersonalUI(ctk.CTk):
         header.pack(fill="x", padx=10, pady=(0, 5))
 
         headers = ["Image", "Item Name", "Price", "Stock", "Qty", "Actions"]
-        widths = [80, 250, 100, 100, 80, 200]
+        for col, width in enumerate(TABLE_COLUMN_WIDTHS):
+            header.grid_columnconfigure(col, minsize=width)
 
         for i, text in enumerate(headers):
             ctk.CTkLabel(
                 header,
                 text=text,
-                width=widths[i],
                 anchor="w",
                 font=ctk.CTkFont(weight="bold")
             ).grid(row=0, column=i, padx=5, pady=8, sticky="w")
 
     def load_personal_items(self):
-        placeholders = ",".join("?" for _ in PERSONAL_ITEMS)
+        category_values = get_category_where_values(PAGE_CATEGORY)
+        placeholders = ",".join("?" for _ in category_values)
         self.cursor.execute(
             f"""
             SELECT * FROM inventory
-            WHERE name IN ({placeholders})
+            WHERE category IN ({placeholders})
             ORDER BY name
             """,
-            PERSONAL_ITEMS
+            category_values
         )
         items = self.cursor.fetchall()
 
@@ -117,39 +130,27 @@ class PersonalUI(ctk.CTk):
 
         row = ctk.CTkFrame(self.content, fg_color=bg_color)
         row.pack(fill="x", padx=10, pady=2)
+        for col, width in enumerate(TABLE_COLUMN_WIDTHS):
+            row.grid_columnconfigure(col, minsize=width)
 
-        img_path = "assets/images/personal.png"
+        ctk.CTkLabel(row, text="IMG", anchor="w").grid(row=0, column=0, padx=5, sticky="w")
 
-        if os.path.exists(img_path):
-            img = Image.open(img_path)
-            img = ctk.CTkImage(img, size=(40, 40))
-            ctk.CTkLabel(row, image=img, text="", width=80).grid(row=0, column=0, padx=5)
-        else:
-            ctk.CTkLabel(row, text="IMG", width=80).grid(row=0, column=0)
+        ctk.CTkLabel(row, text=data[1], anchor="w").grid(row=0, column=1, padx=5, sticky="w")
+        ctk.CTkLabel(row, text=f"${data[2]}", anchor="w").grid(row=0, column=2, padx=5, sticky="w")
+        ctk.CTkLabel(row, text=str(data[3]), anchor="w").grid(row=0, column=3, padx=5, sticky="w")
 
-        ctk.CTkLabel(row, text=data[1], width=250, anchor="w").grid(row=0, column=1, padx=5)
-        ctk.CTkLabel(row, text=f"${data[2]}", width=100).grid(row=0, column=2)
-        ctk.CTkLabel(row, text=str(data[3]), width=100).grid(row=0, column=3)
-
-        qty = ctk.CTkEntry(row, width=60)
+        qty = ctk.CTkEntry(row, width=70)
         qty.insert(0, "1")
-        qty.grid(row=0, column=4)
+        qty.grid(row=0, column=4, padx=5, sticky="w")
 
         actions = ctk.CTkFrame(row, fg_color="transparent")
-        actions.grid(row=0, column=5, padx=5)
+        actions.grid(row=0, column=5, padx=5, sticky="w")
 
         ctk.CTkButton(
             actions,
             text="Add",
             width=60,
             command=lambda d=data, q=qty: self.add_to_cart(d, q)
-        ).pack(side="left", padx=3)
-
-        ctk.CTkButton(
-            actions,
-            text="Buy Now",
-            width=80,
-            command=lambda d=data, q=qty: self.buy_now(d, q)
         ).pack(side="left", padx=3)
 
     def add_to_cart(self, data, qty_entry):
@@ -186,16 +187,9 @@ class PersonalUI(ctk.CTk):
 
         save_user_cart(cart_items)
 
-    def buy_now(self, data, qty_entry):
-        try:
-            qty = int(qty_entry.get())
-        except ValueError:
-            return
-
-        self.process_order(data[0], qty)
-
     def checkout(self):
         subprocess.Popen([sys.executable, os.path.join(BASE_DIR, "cart_ui.py")])
+        self.destroy()
 
     def open_orders(self):
         subprocess.Popen([sys.executable, os.path.join(BASE_DIR, "customer_orders_ui.py")])
@@ -212,37 +206,6 @@ class PersonalUI(ctk.CTk):
     def go_to_dashboard(self):
         subprocess.Popen([sys.executable, os.path.join(BASE_DIR, "customer_dashboard_ui.py")])
         self.destroy()
-
-    def process_order(self, item_id, qty):
-        self.cursor.execute("SELECT stock FROM inventory WHERE id=?", (item_id,))
-        result = self.cursor.fetchone()
-
-        if not result:
-            return
-
-        stock = result[0]
-
-        if qty > stock:
-            print("Not enough stock")
-            return
-
-        new_stock = stock - qty
-
-        self.cursor.execute(
-            "UPDATE inventory SET stock=? WHERE id=?",
-            (new_stock, item_id)
-        )
-        self.conn.commit()
-
-        self.reload()
-
-    def reload(self):
-        for widget in self.content.winfo_children():
-            widget.destroy()
-
-        self.create_header()
-        self.load_personal_items()
-
 
 if __name__ == "__main__":
     app = PersonalUI()

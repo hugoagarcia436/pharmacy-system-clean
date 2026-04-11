@@ -1,6 +1,6 @@
 # Pharmacy+ Project
 
-This project is a pharmacy management and shopping system built with Python, `customtkinter`, JSON storage, and SQLite.
+This project is a pharmacy management and shopping system built with Python, `customtkinter`, saved data files, and SQLite.
 
 It includes:
 - customer shopping interfaces
@@ -85,7 +85,7 @@ It includes:
 - `admin_history_ui.py`
   Employee history screen for viewing customer orders, order details, and generating receipt or verification files.
 
-### JSON Storage Files
+### Saved Data Files
 
 - `cart_data.json`
   Stores the current shopping cart data for the logged-in customer.

@@ -1,9 +1,8 @@
 import customtkinter as ctk
-from PIL import Image
 import os
 import subprocess
 import sys
-from session_utils import get_current_user
+from session_utils import get_current_user, clear_current_user
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -18,8 +17,6 @@ class CustomerAccountUI(ctk.CTk):
 
         self.base_path = os.path.dirname(os.path.realpath(__file__))
         self.current_user = get_current_user()
-        img_path = os.path.join(self.base_path, "assets", "images")
-
         header = ctk.CTkFrame(self, height=70)
         header.pack(fill="x", padx=10, pady=(10, 0))
         header.grid_columnconfigure(1, weight=1)
@@ -44,33 +41,68 @@ class CustomerAccountUI(ctk.CTk):
         display_email = self.current_user.get("email", "N/A")
         ctk.CTkLabel(profile, text=f"Hello, {display_name}", font=("Arial", 22, "bold")).pack(anchor="w", padx=20, pady=10)
         ctk.CTkLabel(profile, text=f"Email: {display_email}", font=("Arial", 14)).pack(anchor="w", padx=20)
-        ctk.CTkButton(profile, text="Edit Profile").pack(anchor="w", padx=20, pady=10)
+        ctk.CTkButton(profile, text="Edit Profile", command=self.open_security).pack(anchor="w", padx=20, pady=10)
 
-        def create_box(row, col, title, desc, btn_text):
+        def create_box(row, col, title, desc, btn_text, command=None):
             box = ctk.CTkFrame(main, corner_radius=12)
             box.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
 
             ctk.CTkLabel(box, text=title, font=("Arial", 16, "bold")).pack(anchor="w", padx=15, pady=10)
             ctk.CTkLabel(box, text=desc, wraplength=250).pack(anchor="w", padx=15)
-            ctk.CTkButton(box, text=btn_text).pack(anchor="w", padx=15, pady=10)
+            ctk.CTkButton(box, text=btn_text, command=command).pack(anchor="w", padx=15, pady=10)
 
-        create_box(1, 0, "Your Orders", "Track, return, or buy again", "View Orders")
-        create_box(1, 1, "History", "See your activity & past interactions", "View History")
+        create_box(1, 0, "Your Orders", "Track, return, or buy again", "View Orders", self.open_orders)
+        create_box(1, 1, "History", "See your activity & past interactions", "View History", self.open_history)
+        create_box(1, 2, "Security", "Password and login settings", "Security Settings", self.open_security)
 
-        create_box(2, 0, "Payment Methods", "Manage cards and billing", "Manage Payments")
-        create_box(2, 1, "Addresses", "Edit shipping and billing addresses", "Manage Addresses")
-        create_box(2, 2, "Security", "Password and login settings", "Security Settings")
+        create_box(2, 0, "Payment Methods", "Manage your full payment, billing, and delivery details", "Manage Payments", self.open_payments)
 
-        create_box(3, 0, "Support", "Get help or contact us", "Contact Support")
+        create_box(3, 0, "Support", "Get help or contact us", "Contact Support", self.open_support)
 
         logout = ctk.CTkFrame(main, corner_radius=12)
         logout.grid(row=3, column=1, padx=10, pady=10, sticky="nsew")
 
         ctk.CTkLabel(logout, text="Account Actions", font=("Arial", 16, "bold")).pack(pady=10)
-        ctk.CTkButton(logout, text="Log Out", fg_color="red").pack(pady=10)
+        ctk.CTkButton(logout, text="Log Out", fg_color="red", hover_color="#b30000", command=self.logout).pack(pady=10)
 
     def open_orders(self):
         subprocess.Popen([sys.executable, os.path.join(self.base_path, "customer_orders_ui.py")])
+        self.destroy()
+
+    def open_history(self):
+        subprocess.Popen([sys.executable, os.path.join(self.base_path, "customer_orders_ui.py")])
+        self.destroy()
+
+    def open_payments(self):
+        subprocess.Popen([sys.executable, os.path.join(self.base_path, "customer_payment_methods_ui.py")])
+        self.destroy()
+
+    def open_security(self):
+        subprocess.Popen([sys.executable, os.path.join(self.base_path, "customer_security_ui.py")])
+        self.destroy()
+
+    def open_support(self):
+        support_window = ctk.CTkToplevel(self)
+        support_window.title("Support")
+        support_window.geometry("460x260")
+
+        ctk.CTkLabel(
+            support_window,
+            text="Support",
+            font=("Arial", 22, "bold")
+        ).pack(anchor="w", padx=20, pady=(20, 10))
+        ctk.CTkLabel(
+            support_window,
+            text="For help with orders, payments, or account access, contact support below.",
+            wraplength=400,
+            justify="left"
+        ).pack(anchor="w", padx=20, pady=5)
+        ctk.CTkLabel(support_window, text="Email: support@pharmacyplus.local").pack(anchor="w", padx=20, pady=5)
+        ctk.CTkLabel(support_window, text="Phone: (555) 010-2026").pack(anchor="w", padx=20, pady=5)
+
+    def logout(self):
+        clear_current_user()
+        subprocess.Popen([sys.executable, os.path.join(self.base_path, "login_ui.py")])
         self.destroy()
 
     def open_dashboard(self):

@@ -57,5 +57,49 @@
       "tax": 1.54,
       "total": 23.54
     }
+  },
+  {
+    "purchase_id": "PUR-1003",
+    "status": "Processing",
+    "date": "April 10, 2026",
+    "customer": {
+      "full_name": "Hugo Hernandez",
+      "phone": "956 908 1814",
+      "email": "hugo321@gmail.com",
+      "city": "Brownsville",
+      "address": "Delivery Address 123 123sadfad",
+      "payment_method": "Cash on Delivery",
+      "card_name": "Capital One",
+      "username": "hugo321@"
+    },
+    "notes": "Order notes",
+    "items": [
+      {
+        "id": 6,
+        "name": "Allergy Pills",
+        "price": 11.0,
+        "qty": 3,
+        "image": "medicine.png"
+      },
+      {
+        "id": 3,
+        "name": "Amoxicillin",
+        "price": 25.0,
+        "qty": 1,
+        "image": "medicine.png"
+      },
+      {
+        "id": 7,
+        "name": "Antibiotic Cream",
+        "price": 18.0,
+        "qty": 1,
+        "image": "medicine.png"
+      }
+    ],
+    "summary": {
+      "subtotal": 76.0,
+      "tax": 5.32,
+      "total": 81.32
+    }
   }
 ]

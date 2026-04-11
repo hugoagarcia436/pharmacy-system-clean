@@ -2,6 +2,11 @@ import customtkinter as ctk
 from datetime import datetime
 import os
 import sqlite3
+from category_utils import (
+    CATEGORY_DISPLAY_NAMES,
+    INVENTORY_CATEGORIES,
+    repair_inventory_categories,
+)
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -21,6 +26,8 @@ class InventoryUI(ctk.CTk):
 
         self.conn = sqlite3.connect("app_data.db")
         self.cursor = self.conn.cursor()
+        repair_inventory_categories(self.cursor)
+        self.conn.commit()
 
         self.current_page = 1
         self.items_per_page = 25
@@ -247,8 +254,14 @@ class InventoryUI(ctk.CTk):
         display_entry = ctk.CTkEntry(detail, placeholder_text="Display Name", width=120)
         display_entry.grid(row=0, column=0, padx=6, pady=4, sticky="ew")
 
-        dept_menu = ctk.CTkOptionMenu(detail, values=["Cosmetic", "Medicine"], width=120)
+        dept_menu = ctk.CTkOptionMenu(
+            detail,
+            values=[CATEGORY_DISPLAY_NAMES[value] for value in INVENTORY_CATEGORIES],
+            width=120
+        )
         dept_menu.grid(row=0, column=1, padx=6, pady=4, sticky="ew")
+        if data[8] in CATEGORY_DISPLAY_NAMES:
+            dept_menu.set(CATEGORY_DISPLAY_NAMES[data[8]])
 
         cost_entry = ctk.CTkEntry(detail, placeholder_text="Cost", width=100)
         cost_entry.grid(row=0, column=2, padx=6, pady=4, sticky="ew")
@@ -290,6 +303,16 @@ class InventoryUI(ctk.CTk):
                 )
             except ValueError:
                 print("Invalid cost value")
+
+        if dept:
+            normalized_dept = next(
+                (key for key, label in CATEGORY_DISPLAY_NAMES.items() if label == dept),
+                dept
+            )
+            self.cursor.execute(
+                "UPDATE inventory SET category=?, updated=? WHERE id=?",
+                (normalized_dept, today, item_id)
+            )
 
         self.conn.commit()
 

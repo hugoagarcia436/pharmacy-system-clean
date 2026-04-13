@@ -1,0 +1,12 @@
+{
+  "hugo321@": {},
+  "hugo444@": {
+    "6": {
+      "id": 6,
+      "name": "Allergy Pills",
+      "price": 11.0,
+      "qty": 1,
+      "image": "medicine.png"
+    }
+  }
+}

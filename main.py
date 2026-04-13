@@ -1,5 +1,4 @@
-from login_ui import LoginUI
+from app.customer_app import launch_customer_app
 
 if __name__ == "__main__":
-    app = LoginUI()
-    app.mainloop()
+    launch_customer_app("login")

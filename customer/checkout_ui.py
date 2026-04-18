@@ -1,6 +1,9 @@
 import customtkinter as ctk
 import json
+import sqlite3
 from datetime import datetime
+from shared.inventory_utils import sell_inventory, validate_cart_stock
+from shared.paths import DB_PATH
 from shared.session_utils import (
     get_current_user,
     load_all_orders,
@@ -235,6 +238,15 @@ class CheckoutUI(ctk.CTkFrame):
             self.status_label.configure(text="Please enter your name and phone number.")
             return
 
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        shortages = validate_cart_stock(cursor, self.cart_items)
+        if shortages:
+            conn.close()
+            conn = None
+            self.status_label.configure(text="Not enough stock for: " + "; ".join(shortages))
+            return
+
         orders = load_all_orders()
         purchase_number = 1000 + len(orders) + 1
         purchase_id = f"PUR-{purchase_number}"
@@ -264,6 +276,20 @@ class CheckoutUI(ctk.CTkFrame):
                 "total": total
             }
         }
+
+        try:
+            for item in self.cart_items.values():
+                sell_inventory(cursor, item["id"], item["qty"], purchase_id)
+            conn.commit()
+        except ValueError as error:
+            conn.rollback()
+            conn.close()
+            conn = None
+            self.status_label.configure(text=str(error))
+            return
+        finally:
+            if conn:
+                conn.close()
 
         orders.append(order_record)
         save_all_orders(orders)

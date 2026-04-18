@@ -1,12 +1,20 @@
 {
-  "hugo321@": {},
+  "hugo321@": {
+    "7": {
+      "id": 7,
+      "name": "Antibiotic Cream",
+      "price": 18.0,
+      "qty": 1,
+      "image": "Antibiotic Cream.jpg"
+    }
+  },
   "hugo444@": {
     "6": {
       "id": 6,
       "name": "Allergy Pills",
       "price": 11.0,
       "qty": 1,
-      "image": "medicine.png"
+      "image": "Allergy Pills.jpg"
     }
   }
 }

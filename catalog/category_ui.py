@@ -1,26 +1,60 @@
-import customtkinter as ctk
 import sqlite3
-import os
-from catalog.category_utils import get_category_where_values, repair_inventory_categories
+
+import customtkinter as ctk
+
+from catalog.category_utils import (
+    CATEGORY_DISPLAY_NAMES,
+    get_category_where_values,
+    normalize_category,
+    repair_inventory_categories,
+)
 from shared.paths import DB_PATH
+from shared.image_utils import product_image_name
 from shared.session_utils import load_user_cart, save_user_cart
 
-print("USING DB:", DB_PATH)
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-PAGE_CATEGORY = "Medicine"
 SIDEBAR_ITEM_WIDTH = 150
 TABLE_COLUMN_WIDTHS = [80, 320, 100, 90, 90, 110]
 
+CATEGORY_PAGE_TITLES = {
+    "Medicine": "Manage Medicine Items",
+    "Cosmetic": "Manage Cosmetic Items",
+    "Personal": "Manage Personal Care Items",
+    "FirstAid": "Manage First Aid Items",
+    "Travel": "Manage Travel Items",
+}
 
-class medicineUI(ctk.CTkFrame):
-    def __init__(self, parent, controller):
+CATEGORY_SIDE_LABELS = {
+    "Medicine": "Medicine",
+    "Cosmetic": "Cosmetics",
+    "Personal": "Personal Care",
+    "FirstAid": "First Aid",
+    "Travel": "Travel Essentials",
+}
+
+CATEGORY_IMAGE_KEYS = {
+    "Medicine": "Paracetamol.png",
+    "Cosmetic": "Moisturizing Cream.png",
+    "Personal": "Shampoo.png",
+    "FirstAid": "Bandages Pack.png",
+    "Travel": "travel.png",
+}
+
+
+class CategoryUI(ctk.CTkFrame):
+    def __init__(self, parent, controller, category):
         super().__init__(parent)
         self.controller = controller
+        self.category = normalize_category(category)
 
-        self.controller.title("Manage Prescription")
+        if self.category is None:
+            raise ValueError(f"Unknown category: {category}")
+
+        display_name = CATEGORY_DISPLAY_NAMES.get(self.category, self.category)
+        self.controller.title(CATEGORY_PAGE_TITLES.get(self.category, f"Manage {display_name} Items"))
         self.controller.geometry("1100x700")
 
         self.conn = sqlite3.connect(DB_PATH)
@@ -35,8 +69,29 @@ class medicineUI(ctk.CTkFrame):
         self.grid_rowconfigure(1, weight=1)
 
         self.create_topbar()
+        self.create_sidebar()
 
-        # ===== SIDEBAR =====
+        self.content = ctk.CTkScrollableFrame(self)
+        self.content.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
+
+        self.load_items()
+
+    def create_topbar(self):
+        header = ctk.CTkFrame(self, height=70)
+        header.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=(10, 0))
+        header.grid_columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(header, text="Pharmacy+", font=("Arial", 20, "bold")).grid(row=0, column=0, padx=15)
+        self.search_entry = ctk.CTkEntry(header, placeholder_text="Search products or ID...", height=40)
+        self.search_entry.grid(row=0, column=1, sticky="ew", padx=20)
+        self.search_entry.bind("<KeyRelease>", lambda event: self.load_items())
+        self.search_entry.bind("<Return>", lambda event: self.load_items())
+        ctk.CTkButton(header, text="Dashboard", command=self.go_to_dashboard).grid(row=0, column=2, padx=5)
+        ctk.CTkButton(header, text="Orders", command=self.open_orders).grid(row=0, column=3, padx=5)
+        ctk.CTkButton(header, text="My Cart", command=self.open_cart).grid(row=0, column=4, padx=5)
+        ctk.CTkButton(header, text="Account", command=self.open_account).grid(row=0, column=5, padx=10)
+
+    def create_sidebar(self):
         sidebar = ctk.CTkFrame(self, width=220)
         sidebar.grid(row=1, column=0, sticky="ns", padx=(10, 0), pady=10)
         sidebar.grid_propagate(False)
@@ -46,7 +101,7 @@ class medicineUI(ctk.CTkFrame):
 
         ctk.CTkButton(
             sidebar_content,
-            text="Prescription",
+            text=CATEGORY_SIDE_LABELS.get(self.category, self.category),
             font=ctk.CTkFont(size=18, weight="bold"),
             width=SIDEBAR_ITEM_WIDTH,
             height=28,
@@ -56,7 +111,7 @@ class medicineUI(ctk.CTkFrame):
             state="disabled",
             text_color_disabled="white",
             border_width=0,
-            corner_radius=0
+            corner_radius=0,
         ).pack(anchor="w", pady=(0, 24))
 
         ctk.CTkButton(
@@ -64,7 +119,7 @@ class medicineUI(ctk.CTkFrame):
             text="Checkout",
             command=self.checkout,
             anchor="w",
-            width=SIDEBAR_ITEM_WIDTH
+            width=SIDEBAR_ITEM_WIDTH,
         ).pack(anchor="w", pady=(0, 12))
 
         ctk.CTkButton(
@@ -72,33 +127,9 @@ class medicineUI(ctk.CTkFrame):
             text="Back to Dashboard",
             command=self.go_to_dashboard,
             anchor="w",
-            width=SIDEBAR_ITEM_WIDTH
+            width=SIDEBAR_ITEM_WIDTH,
         ).pack(anchor="w")
 
-        # ===== MAIN =====
-        self.content = ctk.CTkScrollableFrame(self)
-        self.content.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
-
-        # TABLE HEADER
-        self.create_header()
-
-        self.load_medicines()
-
-    def create_topbar(self):
-        header = ctk.CTkFrame(self, height=70)
-        header.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=(10, 0))
-        header.grid_columnconfigure(1, weight=1)
-
-        ctk.CTkLabel(header, text="Pharmacy+", font=("Arial", 20, "bold")).grid(row=0, column=0, padx=15)
-        ctk.CTkEntry(header, placeholder_text="Search products...", height=40).grid(row=0, column=1, sticky="ew", padx=20)
-        ctk.CTkButton(header, text="Dashboard", command=self.go_to_dashboard).grid(row=0, column=2, padx=5)
-        ctk.CTkButton(header, text="Orders", command=self.open_orders).grid(row=0, column=3, padx=5)
-        ctk.CTkButton(header, text="My Cart", command=self.open_cart).grid(row=0, column=4, padx=5)
-        ctk.CTkButton(header, text="Account", command=self.open_account).grid(row=0, column=5, padx=10)
-
-    # =========================
-    # HEADER
-    # =========================
     def create_header(self):
         header = ctk.CTkFrame(self.content, fg_color="#2b2b2b")
         header.pack(fill="x", padx=10, pady=(0, 5))
@@ -112,33 +143,50 @@ class medicineUI(ctk.CTkFrame):
                 header,
                 text=text,
                 anchor="w",
-                font=ctk.CTkFont(weight="bold")
+                font=ctk.CTkFont(weight="bold"),
             ).grid(row=0, column=i, padx=5, pady=8, sticky="w")
 
-    # =========================
-    # LOAD MEDICINES
-    # =========================
-    def load_medicines(self):
-        category_values = get_category_where_values(PAGE_CATEGORY)
+    def load_items(self):
+        for widget in self.content.winfo_children():
+            widget.destroy()
+
+        self.create_header()
+
+        category_values = get_category_where_values(self.category)
         placeholders = ",".join("?" for _ in category_values)
+        query = self.search_entry.get().strip()
+        params = list(category_values)
+        query_filter = ""
+
+        if query:
+            if query.upper().startswith("ID-"):
+                query = query[3:]
+            query_filter = "AND (name LIKE ? OR CAST(id AS TEXT) LIKE ?)"
+            params.extend([f"%{query}%", f"%{query}%"])
+
         self.cursor.execute(
             f"""
             SELECT * FROM inventory
             WHERE category IN ({placeholders})
+            {query_filter}
             ORDER BY name
             """,
-            category_values
+            params,
         )
+
         items = self.cursor.fetchall()
+        if not items:
+            ctk.CTkLabel(
+                self.content,
+                text="No matching products found.",
+                text_color="gray"
+            ).pack(anchor="w", padx=10, pady=12)
+            return
 
         for index, item in enumerate(items):
             self.create_row(item, index)
 
-    # =========================
-    # TABLE ROW
-    # =========================
     def create_row(self, data, index):
-
         bg_color = "#1f1f1f" if index % 2 == 0 else "#2a2a2a"
 
         row = ctk.CTkFrame(self.content, fg_color=bg_color)
@@ -147,22 +195,14 @@ class medicineUI(ctk.CTkFrame):
             row.grid_columnconfigure(col, minsize=width)
 
         ctk.CTkLabel(row, text="IMG", anchor="w").grid(row=0, column=0, padx=5, sticky="w")
-
-        # NAME
         ctk.CTkLabel(row, text=data[1], anchor="w").grid(row=0, column=1, padx=5, sticky="w")
-
-        # PRICE
         ctk.CTkLabel(row, text=f"${data[2]}", anchor="w").grid(row=0, column=2, padx=5, sticky="w")
-
-        # STOCK
         ctk.CTkLabel(row, text=str(data[3]), anchor="w").grid(row=0, column=3, padx=5, sticky="w")
 
-        # QTY
         qty = ctk.CTkEntry(row, width=70)
         qty.insert(0, "1")
         qty.grid(row=0, column=4, padx=5, sticky="w")
 
-        # ACTIONS
         actions = ctk.CTkFrame(row, fg_color="transparent")
         actions.grid(row=0, column=5, padx=5, sticky="w")
 
@@ -170,12 +210,9 @@ class medicineUI(ctk.CTkFrame):
             actions,
             text="Add",
             width=60,
-            command=lambda d=data, q=qty: self.add_to_cart(d, q)
+            command=lambda d=data, q=qty: self.add_to_cart(d, q),
         ).pack(side="left", padx=3)
 
-    # =========================
-    # ADD TO CART
-    # =========================
     def add_to_cart(self, data, qty_entry):
         try:
             qty = int(qty_entry.get())
@@ -185,13 +222,8 @@ class medicineUI(ctk.CTkFrame):
         if qty <= 0:
             return
 
-        if data[0] in self.cart:
-            self.cart[data[0]] += qty
-        else:
-            self.cart[data[0]] = qty
-
+        self.cart[data[0]] = self.cart.get(data[0], 0) + qty
         self.save_cart_item(data, qty)
-        print("Cart:", self.cart)
 
     def save_cart_item(self, data, qty):
         item_id = str(data[0])
@@ -205,14 +237,11 @@ class medicineUI(ctk.CTkFrame):
                 "name": data[1],
                 "price": data[2],
                 "qty": qty,
-                "image": "medicine.png"
+                "image": product_image_name(data[1], CATEGORY_IMAGE_KEYS.get(self.category, "Paracetamol.png")),
             }
 
         save_user_cart(cart_items)
 
-    # =========================
-    # CHECKOUT ALL
-    # =========================
     def checkout(self):
         self.controller.show_page("cart")
 
@@ -235,7 +264,10 @@ class medicineUI(ctk.CTkFrame):
             pass
         super().destroy()
 
-if __name__ == "__main__":
-    from app.customer_app import launch_customer_app
 
-    launch_customer_app("medicine")
+def category_page(category):
+    class ConfiguredCategoryUI(CategoryUI):
+        def __init__(self, parent, controller):
+            super().__init__(parent, controller, category)
+
+    return ConfiguredCategoryUI

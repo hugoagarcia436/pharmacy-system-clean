@@ -27,8 +27,8 @@ It includes:
 
 ### Database And Setup
 
-- `app_data.db`
-  Main SQLite database containing inventory and product information.
+- `data/app_data.db`
+  Main SQLite database containing inventory, product information, and user records.
 
 - `database_setup.py`
   Creates and initializes the main database tables and starter data.
@@ -41,20 +41,8 @@ It includes:
 - `customer_dashboard_ui.py`
   Main customer dashboard with category navigation to shopping sections.
 
-- `medicine_ui.py`
-  Customer category interface for viewing and adding medicine items.
-
-- `travel_ui.py`
-  Customer category interface for viewing and adding travel items.
-
-- `cosmetic_ui.py`
-  Customer category interface for viewing and adding cosmetic items.
-
-- `personal_ui.py`
-  Customer category interface for viewing and adding personal care items.
-
-- `firstaid_ui.py`
-  Customer category interface for viewing and adding first aid items.
+- `category_ui.py`
+  Shared customer category interface used for medicine, travel, cosmetic, personal care, and first aid. The dashboard passes the selected category, and this screen filters the inventory data.
 
 - `cart_ui.py`
   Customer cart screen for reviewing items, changing quantity, removing items, and proceeding to checkout.
@@ -70,7 +58,7 @@ It includes:
 
 ### Employee Interfaces
 
-- `admin_dashboard_view_ui.py`
+- `employee_dashboard_ui.py`
   Main employee dashboard showing summary stats and recent customer orders.
 
 - `inventory_ui.py`
@@ -82,7 +70,7 @@ It includes:
 - `employees_ui.py`
   Employee management screen for viewing employee records, employee details, and staff-related actions.
 
-- `admin_history_ui.py`
+- `employee_history_ui.py`
   Employee history screen for viewing customer orders, order details, and generating receipt or verification files.
 
 ### Saved Data Files

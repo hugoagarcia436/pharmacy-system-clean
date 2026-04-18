@@ -3,11 +3,7 @@ import customtkinter as ctk
 from auth.login_ui import LoginUI
 from auth.sign_up_ui import SignUpUI
 from app.staff_app import launch_staff_app
-from catalog.cosmetic_ui import CosmeticUI
-from catalog.firstaid_ui import FirstAidUI
-from catalog.medicine_ui import medicineUI
-from catalog.personal_ui import PersonalUI
-from catalog.travel_ui import TravelUI
+from catalog.category_ui import category_page
 from customer.cart_ui import CartUI
 from customer.checkout_ui import CheckoutUI
 from customer.customer_account_ui import CustomerAccountUI
@@ -33,24 +29,34 @@ class CustomerApp(ctk.CTk):
             "customer_security": CustomerSecurityUI,
             "cart": CartUI,
             "checkout": CheckoutUI,
-            "medicine": medicineUI,
-            "cosmetic": CosmeticUI,
-            "personal": PersonalUI,
-            "firstaid": FirstAidUI,
-            "travel": TravelUI,
+            "medicine": category_page("medicine"),
+            "cosmetic": category_page("cosmetic"),
+            "personal": category_page("personal"),
+            "firstaid": category_page("firstaid"),
+            "travel": category_page("travel"),
         }
 
     def show_page(self, page_name):
         page_class = self.pages[page_name]
         if self.current_page is not None:
+            self.current_page.grid_forget()
             self.current_page.destroy()
+            self.current_page = None
+
+        for widget in self.winfo_children():
+            widget.grid_forget()
+            widget.destroy()
+
+        self.update_idletasks()
 
         self.current_page = page_class(self, self)
         self.current_page.grid(row=0, column=0, sticky="nsew")
 
     def open_staff_dashboard(self):
-        launch_staff_app("dashboard")
+        self.withdraw()
+        self.update_idletasks()
         self.destroy()
+        launch_staff_app("dashboard")
 
 
 def launch_customer_app(start_page="login"):

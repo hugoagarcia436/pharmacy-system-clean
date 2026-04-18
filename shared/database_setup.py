@@ -1,5 +1,7 @@
 import sqlite3
 from catalog.category_utils import repair_inventory_categories
+from shared.employee_auth import ensure_employee_user_schema, assign_missing_employee_ids
+from shared.inventory_utils import ensure_inventory_transaction_schema
 from shared.paths import DB_PATH
 
 # Connect (creates file if it doesn't exist)
@@ -19,6 +21,8 @@ CREATE TABLE IF NOT EXISTS users (
     role TEXT
 )
 """)
+ensure_inventory_transaction_schema(cursor)
+ensure_employee_user_schema(cursor)
 
 # =========================
 # 👤 DEFAULT USERS
@@ -30,6 +34,7 @@ VALUES
 ("Employee User", "employee@email.com", "employee", "employee123", "employee"),
 ("Customer User", "customer@email.com", "customer", "customer123", "customer")
 """)
+assign_missing_employee_ids(cursor)
 
 # =========================
 # 💊 INVENTORY TABLE

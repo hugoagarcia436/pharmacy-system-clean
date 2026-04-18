@@ -1,10 +1,12 @@
 import customtkinter as ctk
 
-from staff.admin_dashboard_view_ui import AdminDashboard
-from staff.admin_history_ui import AdminHistoryUI
+from staff.employee_dashboard_ui import EmployeeDashboard
+from staff.employee_history_ui import EmployeeHistoryUI
 from staff.employees_ui import EmployeesUI
+from staff.customer_records_ui import CustomerRecordsUI
 from staff.inventory_ui import InventoryUI
 from staff.order_ui import Order
+from staff.process_sales_ui import ProcessSalesUI
 
 
 class StaffApp(ctk.CTk):
@@ -14,11 +16,13 @@ class StaffApp(ctk.CTk):
         self.grid_columnconfigure(0, weight=1)
         self.current_page = None
         self.pages = {
-            "dashboard": AdminDashboard,
+            "dashboard": EmployeeDashboard,
+            "sales": ProcessSalesUI,
             "inventory": InventoryUI,
             "orders": Order,
+            "customers": CustomerRecordsUI,
             "employees": EmployeesUI,
-            "history": AdminHistoryUI,
+            "history": EmployeeHistoryUI,
         }
 
     def show_page(self, page_name):

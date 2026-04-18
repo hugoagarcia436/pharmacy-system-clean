@@ -53,14 +53,18 @@ class CustomerAccountUI(ctk.CTkFrame):
         create_box(1, 2, "Security", "Password and login settings", "Security Settings", self.open_security)
 
         create_box(2, 0, "Payment Methods", "Manage your full payment, billing, and delivery details", "Manage Payments", self.open_payments)
-
-        create_box(3, 0, "Support", "Get help or contact us", "Contact Support", self.open_support)
+        create_box(2, 1, "Support", "Get help or contact us", "Contact Support", self.open_support)
 
         logout = ctk.CTkFrame(main, corner_radius=12)
-        logout.grid(row=3, column=1, padx=10, pady=10, sticky="nsew")
+        logout.grid(row=2, column=2, padx=10, pady=10, sticky="nsew")
 
-        ctk.CTkLabel(logout, text="Account Actions", font=("Arial", 16, "bold")).pack(pady=10)
-        ctk.CTkButton(logout, text="Log Out", fg_color="red", hover_color="#b30000", command=self.logout).pack(pady=10)
+        ctk.CTkButton(
+            logout,
+            text="Log Out",
+            fg_color="red",
+            hover_color="#b30000",
+            command=self.logout
+        ).pack(anchor="w", padx=15, pady=20)
 
     def open_orders(self):
         self.controller.show_page("customer_orders")

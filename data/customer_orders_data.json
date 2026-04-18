@@ -19,7 +19,7 @@
         "name": "Allergy Pills",
         "price": 11.0,
         "qty": 2,
-        "image": "medicine.png"
+        "image": "Allergy Pills.jpg"
       }
     ],
     "summary": {
@@ -49,7 +49,7 @@
         "name": "Allergy Pills",
         "price": 11.0,
         "qty": 2,
-        "image": "medicine.png"
+        "image": "Allergy Pills.jpg"
       }
     ],
     "summary": {
@@ -79,27 +79,65 @@
         "name": "Allergy Pills",
         "price": 11.0,
         "qty": 3,
-        "image": "medicine.png"
+        "image": "Allergy Pills.jpg"
       },
       {
         "id": 3,
         "name": "Amoxicillin",
         "price": 25.0,
         "qty": 1,
-        "image": "medicine.png"
+        "image": "Amoxicillin.png"
       },
       {
         "id": 7,
         "name": "Antibiotic Cream",
         "price": 18.0,
         "qty": 1,
-        "image": "medicine.png"
+        "image": "Antibiotic Cream.jpg"
       }
     ],
     "summary": {
       "subtotal": 76.0,
       "tax": 5.32,
       "total": 81.32
+    }
+  },
+  {
+    "purchase_id": "STAFF-1004",
+    "status": "Completed",
+    "date": "April 17, 2026",
+    "processed_by": "Employee User",
+    "customer": {
+      "full_name": "Hugo",
+      "phone": "956 908 1814",
+      "email": "",
+      "city": "",
+      "address": "In-store sale",
+      "payment_method": "Cash",
+      "card_name": "",
+      "username": ""
+    },
+    "notes": "Transaction notes",
+    "items": [
+      {
+        "id": 6,
+        "name": "Allergy Pills",
+        "price": 11.0,
+        "qty": 1,
+        "image": "Allergy Pills.jpg"
+      },
+      {
+        "id": 3,
+        "name": "Amoxicillin",
+        "price": 25.0,
+        "qty": 1,
+        "image": "Amoxicillin.png"
+      }
+    ],
+    "summary": {
+      "subtotal": 36.0,
+      "tax": 2.52,
+      "total": 38.52
     }
   }
 ]

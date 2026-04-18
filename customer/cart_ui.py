@@ -3,6 +3,7 @@ from PIL import Image
 import os
 import json
 from shared.paths import IMAGES_DIR
+from shared.image_utils import DEFAULT_PRODUCT_IMAGE
 from shared.session_utils import load_user_cart, save_user_cart
 
 ctk.set_appearance_mode("dark")
@@ -103,7 +104,7 @@ class CartUI(ctk.CTkFrame):
         card.grid(row=row, column=0, sticky="ew", padx=10, pady=8)
         card.grid_columnconfigure(1, weight=1)
 
-        image_path = os.path.join(img_path, item.get("image", "medicine.png"))
+        image_path = os.path.join(img_path, item.get("image", DEFAULT_PRODUCT_IMAGE))
         if os.path.exists(image_path):
             image = Image.open(image_path)
         else:

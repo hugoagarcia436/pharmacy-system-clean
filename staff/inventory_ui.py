@@ -1,20 +1,18 @@
 import customtkinter as ctk
 from datetime import datetime
 import sqlite3
+from tkinter import messagebox
 from catalog.category_utils import (
     CATEGORY_DISPLAY_NAMES,
     INVENTORY_CATEGORIES,
     repair_inventory_categories,
 )
+from shared.inventory_utils import set_inventory_stock
 from shared.paths import DB_PATH
+from staff.sidebar_ui import EmployeeSidebar
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
-
-SIDEBAR_COLOR = "#161b31"
-BUTTON_COLOR = "#2f66db"
-BUTTON_HOVER = "#3a73e3"
-ACTIVE_BUTTON = "#4b83e7"
 
 
 class InventoryUI(ctk.CTkFrame):
@@ -36,18 +34,7 @@ class InventoryUI(ctk.CTkFrame):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        sidebar = ctk.CTkFrame(self, width=240, fg_color=SIDEBAR_COLOR)
-        sidebar.grid(row=0, column=0, sticky="ns")
-        sidebar.grid_propagate(False)
-
-        ctk.CTkLabel(sidebar, text="EMPLOYEE",
-                     font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(28, 28))
-
-        self.create_sidebar_button(sidebar, "Dashboard", self.open_dashboard)
-        self.create_sidebar_button(sidebar, "Inventory", active=True)
-        self.create_sidebar_button(sidebar, "Orders", self.open_orders)
-        self.create_sidebar_button(sidebar, "Employees", self.open_employees)
-        self.create_sidebar_button(sidebar, "History", self.open_history)
+        self.sidebar = EmployeeSidebar(self, self.controller, "inventory")
 
         main = ctk.CTkFrame(self)
         main.grid(row=0, column=1, sticky="nsew")
@@ -60,7 +47,7 @@ class InventoryUI(ctk.CTkFrame):
 
         topbar.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(topbar, text="Inventory Check",
+        ctk.CTkLabel(topbar, text="View Inventory",
                      font=ctk.CTkFont(size=20, weight="bold"))\
             .grid(row=0, column=0, padx=15, sticky="w")
 
@@ -88,6 +75,7 @@ class InventoryUI(ctk.CTkFrame):
 
         # trigger search when pressing Enter
         self.search_entry.bind("<Return>", self.search_inventory)
+        self.search_entry.bind("<KeyRelease>", self.search_inventory)
 
         self.table = ctk.CTkScrollableFrame(
             frame,
@@ -162,17 +150,6 @@ class InventoryUI(ctk.CTkFrame):
 
         self.refresh_table()
 
-    def create_sidebar_button(self, sidebar, text, command=None, active=False):
-        ctk.CTkButton(
-            sidebar,
-            text=text,
-            height=42,
-            fg_color=ACTIVE_BUTTON if active else BUTTON_COLOR,
-            hover_color=BUTTON_HOVER,
-            corner_radius=8,
-            command=command
-        ).pack(fill="x", padx=18, pady=8)
-
     def populate_rows(self, search=False):
         for widget in self.table.winfo_children()[2:]:
             widget.destroy()
@@ -197,6 +174,15 @@ class InventoryUI(ctk.CTkFrame):
             )
 
         rows = self.cursor.fetchall()
+
+        if not rows:
+            message = "Product not found." if search else "No inventory items available."
+            ctk.CTkLabel(
+                self.table,
+                text=message,
+                text_color="gray"
+            ).grid(row=2, column=0, columnspan=6, sticky="w", padx=10, pady=12)
+            return
 
         for i, row_data in enumerate(rows):
             self.create_row(i, row_data)
@@ -252,23 +238,52 @@ class InventoryUI(ctk.CTkFrame):
 
         detail.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
 
+        detail_lines = [
+            f"Product ID: ID-{data[0]}",
+            f"Name: {data[1]}",
+            f"Price: ${data[2]:.2f}",
+            f"Current Stock: {data[3]}",
+            f"Sold: {data[4] or 0}",
+            f"Total Stock: {data[5] or data[3]}",
+            f"Updated: {data[6]}",
+            f"Status: {data[7]}",
+            f"Category: {CATEGORY_DISPLAY_NAMES.get(data[8], data[8])}",
+        ]
+
+        detail_info = ctk.CTkFrame(detail, fg_color="transparent")
+        detail_info.grid(row=0, column=0, columnspan=5, sticky="ew", padx=8, pady=(8, 4))
+        detail_info.grid_columnconfigure((0, 1, 2), weight=1)
+
+        for line_index, line in enumerate(detail_lines):
+            ctk.CTkLabel(
+                detail_info,
+                text=line,
+                anchor="w"
+            ).grid(
+                row=line_index // 3,
+                column=line_index % 3,
+                padx=6,
+                pady=3,
+                sticky="w"
+            )
+
         display_entry = ctk.CTkEntry(detail, placeholder_text="Display Name", width=120)
-        display_entry.grid(row=0, column=0, padx=6, pady=4, sticky="ew")
+        display_entry.grid(row=1, column=0, padx=6, pady=4, sticky="ew")
 
         dept_menu = ctk.CTkOptionMenu(
             detail,
             values=[CATEGORY_DISPLAY_NAMES[value] for value in INVENTORY_CATEGORIES],
             width=120
         )
-        dept_menu.grid(row=0, column=1, padx=6, pady=4, sticky="ew")
+        dept_menu.grid(row=1, column=1, padx=6, pady=4, sticky="ew")
         if data[8] in CATEGORY_DISPLAY_NAMES:
             dept_menu.set(CATEGORY_DISPLAY_NAMES[data[8]])
 
         cost_entry = ctk.CTkEntry(detail, placeholder_text="Cost", width=100)
-        cost_entry.grid(row=0, column=2, padx=6, pady=4, sticky="ew")
+        cost_entry.grid(row=1, column=2, padx=6, pady=4, sticky="ew")
 
         barcode_entry = ctk.CTkEntry(detail, placeholder_text="Barcode", width=120)
-        barcode_entry.grid(row=0, column=3, padx=6, pady=4, sticky="ew")
+        barcode_entry.grid(row=1, column=3, padx=6, pady=4, sticky="ew")
 
         ctk.CTkButton(
             detail,
@@ -281,9 +296,46 @@ class InventoryUI(ctk.CTkFrame):
                 cost_entry.get(),
                 barcode_entry.get()
             )
-        ).grid(row=0, column=4, padx=6, pady=4)
+        ).grid(row=1, column=4, padx=6, pady=4)
+
+        stock_update_frame = ctk.CTkFrame(detail, fg_color="transparent")
+        stock_update_frame.grid(row=2, column=0, columnspan=5, sticky="ew", padx=8, pady=(4, 8))
+        stock_update_frame.grid_columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(
+            stock_update_frame,
+            text="Updated Stock Quantity"
+        ).grid(row=0, column=0, padx=6, pady=4, sticky="w")
+
+        stock_entry = ctk.CTkEntry(stock_update_frame, placeholder_text="Enter updated stock quantity")
+        stock_entry.insert(0, str(data[3]))
+        stock_entry.grid(row=0, column=1, padx=6, pady=4, sticky="ew")
+
+        ctk.CTkButton(
+            stock_update_frame,
+            text="Update Stock",
+            width=120,
+            command=lambda: self.update_stock_quantity(data[0], stock_entry.get())
+        ).grid(row=0, column=2, padx=6, pady=4)
 
         self.detail_frame = detail
+
+    def update_stock_quantity(self, item_id, quantity_value):
+        try:
+            updated_stock = int(quantity_value)
+        except ValueError:
+            messagebox.showerror("Invalid Quantity", "Invalid quantity entered.")
+            return
+
+        if updated_stock < 0:
+            messagebox.showerror("Invalid Quantity", "Quantity cannot be negative.")
+            return
+
+        set_inventory_stock(self.cursor, item_id, updated_stock, "Employee inventory update")
+        self.conn.commit()
+        messagebox.showinfo("Inventory Updated", "Inventory has been successfully updated.")
+        self.refresh_table()
+        self.remove_details()
 
     def save_changes(self, item_id, name, dept, cost, barcode):
 
@@ -330,7 +382,19 @@ class InventoryUI(ctk.CTkFrame):
             self.refresh_table()
 
     def refresh_table(self):
-        self.cursor.execute("SELECT COUNT(*) FROM inventory")
+        is_searching = hasattr(self, "search_entry") and bool(self.search_entry.get().strip())
+
+        if is_searching:
+            query = self.search_entry.get().strip()
+            if query.upper().startswith("ID-"):
+                query = query[3:]
+            self.cursor.execute(
+                "SELECT COUNT(*) FROM inventory WHERE name LIKE ? OR id LIKE ?",
+                (f"%{query}%", f"%{query}%")
+            )
+        else:
+            self.cursor.execute("SELECT COUNT(*) FROM inventory")
+
         total_items = self.cursor.fetchone()[0]
 
         total_pages = max(1, (total_items // self.items_per_page) +
@@ -339,18 +403,19 @@ class InventoryUI(ctk.CTkFrame):
         if self.current_page > total_pages:
             self.current_page = total_pages
 
-        start = (self.current_page - 1) * self.items_per_page + 1
-        end = min(self.current_page * self.items_per_page, total_items)
+        if total_items == 0:
+            start = 0
+            end = 0
+        else:
+            start = (self.current_page - 1) * self.items_per_page + 1
+            end = min(self.current_page * self.items_per_page, total_items)
 
         self.page_label.configure(text=f"Showing {start}-{end} of {total_items} items  |  Page {self.current_page} of {total_pages}")
 
         self.prev_btn.configure(state="normal" if self.current_page > 1 else "disabled")
         self.next_btn.configure(state="normal" if self.current_page < total_pages else "disabled")
 
-        if hasattr(self, "search_entry") and self.search_entry.get():
-            self.populate_rows(search=True)
-        else:
-            self.populate_rows()
+        self.populate_rows(search=is_searching)
 
     def remove_details(self):
         if hasattr(self, "detail_frame"):
@@ -359,19 +424,7 @@ class InventoryUI(ctk.CTkFrame):
     
     def search_inventory(self, event=None):
         self.current_page = 1
-        self.populate_rows(search=True)
-
-    def open_dashboard(self):
-        self.controller.show_page("dashboard")
-
-    def open_orders(self):
-        self.controller.show_page("orders")
-
-    def open_employees(self):
-        self.controller.show_page("employees")
-
-    def open_history(self):
-        self.controller.show_page("history")
+        self.refresh_table()
 
     def destroy(self):
         try:

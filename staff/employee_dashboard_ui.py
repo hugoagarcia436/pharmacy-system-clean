@@ -3,19 +3,13 @@ import json
 import os
 from datetime import datetime
 from shared.paths import ORDERS_FILE
-from staff.employees_ui import EmployeesUI
-from staff.inventory_ui import InventoryUI
+from staff.sidebar_ui import EmployeeSidebar
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-SIDEBAR_COLOR = "#161b31"
-BUTTON_COLOR = "#2f66db"
-BUTTON_HOVER = "#3a73e3"
-ACTIVE_BUTTON = "#4b83e7"
 
-
-class AdminDashboard(ctk.CTkFrame):
+class EmployeeDashboard(ctk.CTkFrame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
@@ -28,18 +22,7 @@ class AdminDashboard(ctk.CTkFrame):
         self.grid_columnconfigure(1, weight=3)
         self.grid_rowconfigure(0, weight=1)
 
-        # ========== SIDEBAR ==========
-        self.sidebar = ctk.CTkFrame(self, width=240, fg_color=SIDEBAR_COLOR)
-        self.sidebar.grid(row=0, column=0, sticky="ns")
-        self.sidebar.grid_propagate(False)
-
-        ctk.CTkLabel(self.sidebar, text="EMPLOYEE", font=("Arial", 20, "bold")).pack(pady=(28, 28))
-
-        self.create_sidebar_button("Dashboard", active=True)
-        self.create_sidebar_button("Inventory", self.open_inventory)
-        self.create_sidebar_button("Orders", self.open_orders)
-        self.create_sidebar_button("Employees", self.open_employees)
-        self.create_sidebar_button("History", self.open_history)
+        self.sidebar = EmployeeSidebar(self, self.controller, "dashboard")
 
         # ========== MAIN AREA ==========
         self.main_frame = ctk.CTkFrame(self)
@@ -88,17 +71,6 @@ class AdminDashboard(ctk.CTkFrame):
 
         ctk.CTkLabel(frame, text=title, font=("Arial", 14)).pack(anchor="w", padx=10, pady=(10, 0))
         ctk.CTkLabel(frame, text=value, font=("Arial", 24, "bold")).pack(anchor="w", padx=10, pady=(0, 10))
-
-    def create_sidebar_button(self, text, command=None, active=False):
-        ctk.CTkButton(
-            self.sidebar,
-            text=text,
-            height=42,
-            fg_color=ACTIVE_BUTTON if active else BUTTON_COLOR,
-            hover_color=BUTTON_HOVER,
-            corner_radius=8,
-            command=command
-        ).pack(fill="x", padx=18, pady=8)
 
     # ========== LOAD ORDERS ==========
     def load_orders(self):
@@ -170,23 +142,6 @@ class AdminDashboard(ctk.CTkFrame):
                 popup,
                 text=f"{item.get('name', 'Item')} x{item.get('qty', 0)}  ${item.get('price', 0):.2f}"
             ).pack(anchor="w", padx=20, pady=3)
-
-    # ========== NAVIGATION ==========
-  
-  
-    def open_inventory(self):
-        self.controller.show_page("inventory")
-  
-  
-    def open_orders(self):
-        self.controller.show_page("orders")
-
-    def open_employees(self):
-        self.controller.show_page("employees")
-              
-    def open_history(self):
-        self.controller.show_page("history")
-
 
 if __name__ == "__main__":
     from app.staff_app import launch_staff_app

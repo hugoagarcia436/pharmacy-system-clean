@@ -2,11 +2,17 @@ import customtkinter as ctk
 from PIL import Image
 import os
 import sqlite3
+from datetime import datetime, timedelta
 from shared.paths import DB_PATH, IMAGES_DIR
+from shared.employee_auth import assign_missing_employee_ids, ensure_employee_user_schema
 from shared.session_utils import set_current_user
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
+
+MAX_LOGIN_ATTEMPTS = 3
+LOCKOUT_MINUTES = 5
+LOGIN_ATTEMPTS = {}
 
 
 class LoginUI(ctk.CTkFrame):
@@ -65,6 +71,29 @@ class LoginUI(ctk.CTkFrame):
             font=("Arial", 16)
         )
         self.subtitle.pack(pady=(0, 25))
+
+        self.login_mode = "standard"
+        self.mode_frame = ctk.CTkFrame(self.center_frame, fg_color="transparent")
+        self.mode_frame.pack(fill="x", pady=(0, 10))
+        self.mode_frame.grid_columnconfigure((0, 1), weight=1)
+
+        self.standard_login_button = ctk.CTkButton(
+            self.mode_frame,
+            text="Customer Login",
+            height=34,
+            command=self.use_standard_login
+        )
+        self.standard_login_button.grid(row=0, column=0, padx=(0, 5), sticky="ew")
+
+        self.employee_login_button = ctk.CTkButton(
+            self.mode_frame,
+            text="Employee Login",
+            height=34,
+            fg_color="#2f2f2f",
+            hover_color="#3a3a3a",
+            command=self.use_employee_login
+        )
+        self.employee_login_button.grid(row=0, column=1, padx=(5, 0), sticky="ew")
 
         # Email
         self.email_entry = ctk.CTkEntry(
@@ -152,39 +181,113 @@ class LoginUI(ctk.CTkFrame):
     def open_signup(self, event):
         self.controller.show_page("signup")
 
+    def use_standard_login(self):
+        self.login_mode = "standard"
+        self.email_entry.configure(placeholder_text="Email or Username")
+        self.subtitle.configure(text="Login to your account")
+        self.standard_login_button.configure(fg_color="#2f66db", hover_color="#3a73e3")
+        self.employee_login_button.configure(fg_color="#2f2f2f", hover_color="#3a3a3a")
+
+    def use_employee_login(self):
+        self.login_mode = "employee"
+        self.email_entry.configure(placeholder_text="Employee ID")
+        self.subtitle.configure(text="Employee Login")
+        self.employee_login_button.configure(fg_color="#2f66db", hover_color="#3a73e3")
+        self.standard_login_button.configure(fg_color="#2f2f2f", hover_color="#3a3a3a")
+
     def login_user(self):
         from tkinter import messagebox
 
-        username = self.email_entry.get()
+        login_identifier = self.email_entry.get().strip()
         password = self.password_entry.get()
 
-        if username == "" or password == "":
+        if login_identifier == "" or password == "":
             messagebox.showerror("Error", "Please fill all fields")
+            return
+
+        if self.is_locked_out(login_identifier):
+            messagebox.showerror("Error", "Too many invalid attempts. Please try again later.")
             return
 
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
+        ensure_employee_user_schema(cursor)
+        assign_missing_employee_ids(cursor)
+        conn.commit()
 
-        cursor.execute(
-            "SELECT name, email, username, role FROM users WHERE username=? AND password=?",
-            (username, password)
-        )
+        if self.login_mode == "employee":
+            cursor.execute(
+                """
+                SELECT id, name, email, username, role, employee_id, password_setup_required
+                FROM users
+                WHERE role='employee'
+                AND lower(employee_id)=lower(?)
+                """,
+                (login_identifier,)
+            )
+            employee_account = cursor.fetchone()
+
+            if employee_account is None:
+                conn.close()
+                messagebox.showerror(
+                    "Employee Account Not Found",
+                    "Employee account not found. Please use Sign Up or contact a manager to create your employee account."
+                )
+                return
+
+            user_id, name, email, username, role, employee_id, setup_required = employee_account
+            if password == "":
+                conn.close()
+                messagebox.showerror("Error", "Please fill all fields")
+                return
+
+            cursor.execute(
+                """
+                SELECT id, name, email, username, role, employee_id, password_setup_required
+                FROM users
+                WHERE role='employee'
+                AND lower(employee_id)=lower(?)
+                AND password=?
+                """,
+                (login_identifier, password)
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT id, name, email, username, role, employee_id, password_setup_required
+                FROM users
+                WHERE (lower(username)=lower(?) OR lower(email)=lower(?))
+                AND password=?
+                """,
+                (login_identifier, login_identifier, password)
+            )
 
         result = cursor.fetchone()
-        conn.close()
 
         if result:
-            name, email, username, role = result
+            user_id, name, email, username, role, employee_id, setup_required = result
+            if role == "employee" and setup_required:
+                conn.close()
+                messagebox.showerror("Error", "Please use Sign Up or contact a manager to finish your employee account.")
+                return
+
+            self.clear_failed_attempts(login_identifier)
+
+            cursor.execute(
+                "UPDATE users SET last_login=? WHERE id=?",
+                (datetime.now().strftime("%Y-%m-%d %I:%M %p"), user_id)
+            )
+            conn.commit()
+            conn.close()
+
             set_current_user({
                 "name": name,
                 "email": email,
                 "username": username,
-                "role": role
+                "role": role,
+                "employee_id": employee_id
             })
 
-            messagebox.showinfo("Success", f"Logged in as {role}")
-
-             
             if role == "customer":
                 self.controller.show_page("customer_dashboard")
 
@@ -192,7 +295,48 @@ class LoginUI(ctk.CTkFrame):
                 self.controller.open_staff_dashboard()
 
         else:
-            messagebox.showerror("Error", "Invalid credentials")    
+            conn.close()
+            attempts_left = self.register_failed_attempt(login_identifier)
+            if attempts_left <= 0:
+                messagebox.showerror("Error", "Too many invalid attempts. Login is temporarily locked.")
+            elif self.login_mode == "employee":
+                messagebox.showerror("Error", "Invalid employee ID or password.")
+            else:
+                messagebox.showerror("Error", f"Invalid credentials. Attempts left: {attempts_left}")
+
+    def attempt_key(self, username):
+        return username.strip().lower()
+
+    def is_locked_out(self, username):
+        key = self.attempt_key(username)
+        attempt_data = LOGIN_ATTEMPTS.get(key)
+        if not attempt_data:
+            return False
+
+        locked_until = attempt_data.get("locked_until")
+        if locked_until is None:
+            return False
+
+        if datetime.now() >= locked_until:
+            LOGIN_ATTEMPTS.pop(key, None)
+            return False
+
+        return True
+
+    def register_failed_attempt(self, username):
+        key = self.attempt_key(username)
+        attempt_data = LOGIN_ATTEMPTS.setdefault(key, {"count": 0, "locked_until": None})
+        attempt_data["count"] += 1
+
+        attempts_left = MAX_LOGIN_ATTEMPTS - attempt_data["count"]
+        if attempts_left <= 0:
+            attempt_data["locked_until"] = datetime.now() + timedelta(minutes=LOCKOUT_MINUTES)
+            return 0
+
+        return attempts_left
+
+    def clear_failed_attempts(self, username):
+        LOGIN_ATTEMPTS.pop(self.attempt_key(username), None)
 
 
 if __name__ == "__main__":

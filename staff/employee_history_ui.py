@@ -4,17 +4,13 @@ import os
 import tkinter as tk
 from tkinter import messagebox
 from shared.paths import ORDERS_FILE, RECEIPTS_DIR
+from staff.sidebar_ui import EmployeeSidebar
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-SIDEBAR_COLOR = "#161b31"
-BUTTON_COLOR = "#2f66db"
-BUTTON_HOVER = "#3a73e3"
-ACTIVE_BUTTON = "#4b83e7"
 
-
-class AdminHistoryUI(ctk.CTkFrame):
+class EmployeeHistoryUI(ctk.CTkFrame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
@@ -36,17 +32,7 @@ class AdminHistoryUI(ctk.CTkFrame):
             ("Action", 160),
         ]
 
-        self.sidebar = ctk.CTkFrame(self, width=240, fg_color=SIDEBAR_COLOR)
-        self.sidebar.grid(row=0, column=0, sticky="nsw")
-        self.sidebar.grid_propagate(False)
-
-        ctk.CTkLabel(self.sidebar, text="EMPLOYEE", font=("Arial", 20, "bold")).pack(pady=(28, 28))
-
-        self.create_sidebar_button("Dashboard", self.open_dashboard)
-        self.create_sidebar_button("Inventory", self.open_inventory)
-        self.create_sidebar_button("Orders", self.open_orders)
-        self.create_sidebar_button("Employees", self.open_employees)
-        self.create_sidebar_button("History", self.open_history, active=True)
+        self.sidebar = EmployeeSidebar(self, self.controller, "history")
 
         self.main = ctk.CTkFrame(self, fg_color="transparent")
         self.main.grid(row=0, column=1, sticky="nsew")
@@ -59,18 +45,6 @@ class AdminHistoryUI(ctk.CTkFrame):
         self.rows_per_page = 6
 
         self.build_ui()
-
-    def create_sidebar_button(self, text, command, active=False):
-        color = ACTIVE_BUTTON if active else BUTTON_COLOR
-        ctk.CTkButton(
-            self.sidebar,
-            text=text,
-            height=42,
-            fg_color=color,
-            hover_color=BUTTON_HOVER,
-            corner_radius=8,
-            command=command
-        ).pack(fill="x", padx=20, pady=8)
 
     def build_ui(self):
         top_bar = ctk.CTkFrame(self.main, fg_color="transparent")
@@ -326,22 +300,6 @@ class AdminHistoryUI(ctk.CTkFrame):
         if self.current_page > 0:
             self.current_page -= 1
             self.render_orders()
-
-    def open_dashboard(self):
-        self.controller.show_page("dashboard")
-
-    def open_orders(self):
-        self.controller.show_page("orders")
-
-    def open_inventory(self):
-        self.controller.show_page("inventory")
-
-    def open_employees(self):
-        self.controller.show_page("employees")
-
-    def open_history(self):
-        pass
-
 
 if __name__ == "__main__":
     from app.staff_app import launch_staff_app

@@ -1,12 +1,18 @@
 import customtkinter as ctk
+import sqlite3
+from datetime import datetime
+from tkinter import messagebox
+from shared.employee_auth import (
+    assign_missing_employee_ids,
+    employee_row_to_dict,
+    ensure_employee_user_schema,
+    generate_employee_id,
+)
+from shared.paths import DB_PATH
+from staff.sidebar_ui import EmployeeSidebar
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
-
-SIDEBAR_COLOR = "#161b31"
-BUTTON_COLOR = "#2f66db"
-BUTTON_HOVER = "#3a73e3"
-ACTIVE_BUTTON = "#4b83e7"
 
 
 class EmployeesUI(ctk.CTkFrame):
@@ -19,6 +25,12 @@ class EmployeesUI(ctk.CTkFrame):
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
+
+        self.conn = sqlite3.connect(DB_PATH)
+        self.cursor = self.conn.cursor()
+        ensure_employee_user_schema(self.cursor)
+        assign_missing_employee_ids(self.cursor)
+        self.conn.commit()
 
         # =========================
         # SAMPLE DATA
@@ -116,27 +128,11 @@ class EmployeesUI(ctk.CTkFrame):
             }
         ]
 
+        self.employees = self.load_employees_from_database()
         self.filtered_employees = self.employees[:]
         self.detail_frame = None
 
-        # =========================
-        # SIDEBAR
-        # =========================
-        sidebar = ctk.CTkFrame(self, width=240, fg_color=SIDEBAR_COLOR)
-        sidebar.grid(row=0, column=0, sticky="ns")
-        sidebar.grid_propagate(False)
-
-        ctk.CTkLabel(
-            sidebar,
-            text="EMPLOYEE",
-            font=ctk.CTkFont(size=20, weight="bold")
-        ).pack(pady=(28, 28))
-
-        self.create_sidebar_button(sidebar, "Dashboard", self.open_dashboard)
-        self.create_sidebar_button(sidebar, "Inventory", self.open_inventory)
-        self.create_sidebar_button(sidebar, "Orders", self.open_orders)
-        self.create_sidebar_button(sidebar, "Employees", active=True)
-        self.create_sidebar_button(sidebar, "History", self.open_history)
+        self.sidebar = EmployeeSidebar(self, self.controller, "employees")
 
         # =========================
         # MAIN
@@ -163,20 +159,33 @@ class EmployeesUI(ctk.CTkFrame):
 
         self.show_employees()
 
-    def create_sidebar_button(self, sidebar, text, command=None, active=False):
-        ctk.CTkButton(
-            sidebar,
-            text=text,
-            height=42,
-            fg_color=ACTIVE_BUTTON if active else BUTTON_COLOR,
-            hover_color=BUTTON_HOVER,
-            corner_radius=8,
-            command=command
-        ).pack(fill="x", padx=18, pady=8)
-
     # =========================
     # HELPERS
     # =========================
+    def load_employees_from_database(self):
+        self.cursor.execute("""
+            SELECT
+                employee_id,
+                name,
+                email,
+                username,
+                phone,
+                employee_position,
+                shift,
+                status,
+                hire_date,
+                last_login,
+                password_setup_required
+            FROM users
+            WHERE role='employee'
+            ORDER BY employee_id
+        """)
+        return [employee_row_to_dict(row) for row in self.cursor.fetchall()]
+
+    def refresh_employee_list(self):
+        self.employees = self.load_employees_from_database()
+        self.filtered_employees = self.employees[:]
+
     def clear_content(self):
         for widget in self.content.winfo_children():
             widget.destroy()
@@ -199,6 +208,7 @@ class EmployeesUI(ctk.CTkFrame):
             matches_query = (
                 query in emp["id"].lower()
                 or query in emp["name"].lower()
+                or query in emp["role"].lower()
                 or query in emp["username"].lower()
                 or query in emp["email"].lower()
             )
@@ -222,31 +232,40 @@ class EmployeesUI(ctk.CTkFrame):
         self.render_table()
 
     def generate_new_employee_id(self):
-        max_num = 0
-        for emp in self.employees:
-            try:
-                current = int(emp["id"].split("-")[1])
-                if current > max_num:
-                    max_num = current
-            except:
-                pass
-        return f"EMP-{max_num + 1:03d}"
+        return generate_employee_id(self.cursor)
 
     def toggle_employee_status(self, emp):
         if emp["status"] == "Active":
-            emp["status"] = "Suspended"
-            emp["activity"] = "Account suspended"
+            new_status = "Suspended"
+            new_activity = "Account suspended"
         else:
-            emp["status"] = "Active"
-            emp["activity"] = "Account reactivated"
+            new_status = "Active"
+            new_activity = "Account reactivated"
 
+        self.cursor.execute(
+            "UPDATE users SET status=? WHERE employee_id=?",
+            (new_status, emp["id"])
+        )
+        self.conn.commit()
+        emp["status"] = new_status
+        emp["activity"] = new_activity
         self.render_table()
 
     def reset_password(self, emp):
+        self.cursor.execute(
+            "UPDATE users SET password='', password_setup_required=1 WHERE employee_id=?",
+            (emp["id"],)
+        )
+        self.conn.commit()
         emp["activity"] = "Password reset requested"
         self.show_employee_detail(emp)
 
     def assign_shift(self, emp, new_shift):
+        self.cursor.execute(
+            "UPDATE users SET shift=? WHERE employee_id=?",
+            (new_shift, emp["id"])
+        )
+        self.conn.commit()
         emp["shift"] = new_shift
         emp["activity"] = f"Shift changed to {new_shift}"
         self.show_employee_detail(emp)
@@ -264,7 +283,7 @@ class EmployeesUI(ctk.CTkFrame):
 
         ctk.CTkLabel(
             container,
-            text="Employees",
+            text="Employee Records",
             font=ctk.CTkFont(size=22, weight="bold")
         ).grid(row=0, column=0, sticky="w", padx=10, pady=(10, 8))
 
@@ -278,7 +297,7 @@ class EmployeesUI(ctk.CTkFrame):
         self.search_entry = ctk.CTkEntry(
             filter_bar,
             width=220,
-            placeholder_text="Search by ID, name, username..."
+            placeholder_text="Search name, employee ID, or role..."
         )
         self.search_entry.grid(row=0, column=0, padx=(0, 8), pady=5, sticky="w")
         self.search_entry.bind("<KeyRelease>", lambda e: self.refresh_filters())
@@ -370,6 +389,14 @@ class EmployeesUI(ctk.CTkFrame):
                 anchor=anchor
             ).grid(row=0, column=col, padx=10, pady=8, sticky="ew")
 
+        if not self.filtered_employees:
+            ctk.CTkLabel(
+                table,
+                text="Employee record not found.",
+                text_color="gray"
+            ).grid(row=2, column=0, sticky="w", padx=10, pady=12)
+            return
+
         for i, emp in enumerate(self.filtered_employees, start=2):
             bg = "#2b2b2b" if (i - 1) % 2 == 0 else "#242424"
 
@@ -411,7 +438,7 @@ class EmployeesUI(ctk.CTkFrame):
                 actions,
                 text="View",
                 width=60,
-                command=lambda e=emp: self.show_employee_detail(e)
+                command=lambda e=emp: self.open_employee_record(e)
             ).pack(side="left", padx=3)
 
             ctk.CTkButton(
@@ -442,6 +469,36 @@ class EmployeesUI(ctk.CTkFrame):
     # =========================
     # VIEW DETAIL
     # =========================
+    def open_employee_record(self, emp):
+        try:
+            employee_id = emp.get("id")
+            self.cursor.execute(
+                """
+                SELECT
+                    employee_id,
+                    name,
+                    email,
+                    username,
+                    phone,
+                    employee_position,
+                    shift,
+                    status,
+                    hire_date,
+                    last_login,
+                    password_setup_required
+                FROM users
+                WHERE role='employee' AND employee_id=?
+                """,
+                (employee_id,)
+            )
+            row = self.cursor.fetchone()
+            if row is None:
+                raise LookupError("Employee record missing")
+
+            self.show_employee_detail(employee_row_to_dict(row))
+        except (sqlite3.Error, LookupError):
+            messagebox.showerror("Employee Record", "Unable to retrieve employee record.")
+
     def show_employee_detail(self, emp):
         self.remove_details()
 
@@ -590,42 +647,86 @@ class EmployeesUI(ctk.CTkFrame):
         status_menu.grid(row=2, column=2, padx=10, pady=8, sticky="ew")
         status_menu.set("Active")
 
-        password_entry = ctk.CTkEntry(self.detail_frame, placeholder_text="Password", show="*")
-        password_entry.grid(row=2, column=3, padx=10, pady=8, sticky="ew")
+        employee_id = self.generate_new_employee_id()
+        ctk.CTkLabel(
+            self.detail_frame,
+            text=f"Assigned ID: {employee_id}",
+            font=ctk.CTkFont(weight="bold")
+        ).grid(row=2, column=3, padx=10, pady=8, sticky="w")
+
+        ctk.CTkLabel(
+            self.detail_frame,
+            text="Give the employee their ID plus username or email. They will set their own password from the login screen.",
+            text_color="gray",
+            wraplength=780,
+            justify="left"
+        ).grid(row=3, column=0, columnspan=4, padx=10, pady=(4, 8), sticky="w")
 
         def save_employee():
             name = name_entry.get().strip()
             phone = phone_entry.get().strip()
             email = email_entry.get().strip()
             username = username_entry.get().strip()
-            password = password_entry.get().strip()
 
-            if not name or not phone or not email or not username or not password:
+            if not name or not phone or not email or not username:
+                messagebox.showerror("Error", "Name, phone, email, and username are required")
                 return
 
-            new_emp = {
-                "id": self.generate_new_employee_id(),
-                "name": name,
-                "role": role_menu.get(),
-                "shift": shift_menu.get(),
-                "status": status_menu.get(),
-                "phone": phone,
-                "email": email,
-                "hire_date": "2026-04-10",
-                "username": username,
-                "last_login": "Never",
-                "orders_handled": 0,
-                "items_processed": 0,
-                "activity": "Employee account created"
-            }
+            self.cursor.execute(
+                "SELECT id FROM users WHERE lower(username)=lower(?) OR lower(email)=lower(?)",
+                (username, email)
+            )
+            if self.cursor.fetchone():
+                messagebox.showerror("Error", "Username or email already exists")
+                return
 
-            self.employees.append(new_emp)
-            self.filtered_employees = self.employees[:]
+            try:
+                self.cursor.execute(
+                    """
+                    INSERT INTO users (
+                        name,
+                        email,
+                        username,
+                        password,
+                        role,
+                        employee_id,
+                        phone,
+                        employee_position,
+                        shift,
+                        status,
+                        hire_date,
+                        last_login,
+                        password_setup_required
+                    )
+                    VALUES (?, ?, ?, '', 'employee', ?, ?, ?, ?, ?, ?, 'Never', 1)
+                    """,
+                    (
+                        name,
+                        email,
+                        username,
+                        employee_id,
+                        phone,
+                        role_menu.get(),
+                        shift_menu.get(),
+                        status_menu.get(),
+                        datetime.now().strftime("%Y-%m-%d"),
+                    )
+                )
+                self.conn.commit()
+            except sqlite3.IntegrityError:
+                messagebox.showerror("Error", "Username or email already exists")
+                return
+
+            self.refresh_employee_list()
             self.remove_details()
             self.render_table()
+            messagebox.showinfo(
+                "Employee Created",
+                f"Employee ID: {employee_id}\nUsername: {username}\nEmail: {email}"
+            )
 
         action_bar = ctk.CTkFrame(self.detail_frame, fg_color="transparent")
-        action_bar.grid(row=3, column=0, columnspan=4, padx=10, pady=(8, 12), sticky="e")
+        action_bar.grid(row=4, column=0, columnspan=4, padx=10, pady=(8, 12), sticky="e")
 
         ctk.CTkButton(
             action_bar,
@@ -641,18 +742,12 @@ class EmployeesUI(ctk.CTkFrame):
             command=self.remove_details
         ).pack(side="left", padx=5)
 
-    def open_dashboard(self):
-        self.controller.show_page("dashboard")
-
-    def open_orders(self):
-        self.controller.show_page("orders")
-
-    def open_inventory(self):
-        self.controller.show_page("inventory")
-
-    def open_history(self):
-        self.controller.show_page("history")
-
+    def destroy(self):
+        try:
+            self.conn.close()
+        except sqlite3.Error:
+            pass
+        super().destroy()
 
 if __name__ == "__main__":
     from app.staff_app import launch_staff_app

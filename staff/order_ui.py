@@ -1,15 +1,12 @@
 import customtkinter as ctk
 import sqlite3
-from datetime import datetime
+from tkinter import messagebox
+from shared.inventory_utils import ensure_inventory_transaction_schema, receive_inventory
 from shared.paths import DB_PATH
+from staff.sidebar_ui import EmployeeSidebar
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
-
-SIDEBAR_COLOR = "#161b31"
-BUTTON_COLOR = "#2f66db"
-BUTTON_HOVER = "#3a73e3"
-ACTIVE_BUTTON = "#4b83e7"
 
 
 class Order(ctk.CTkFrame):
@@ -22,26 +19,13 @@ class Order(ctk.CTkFrame):
 
         self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
+        ensure_inventory_transaction_schema(self.cursor)
+        self.conn.commit()
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        # ===== SIDEBAR =====
-        sidebar = ctk.CTkFrame(self, width=240, fg_color=SIDEBAR_COLOR)
-        sidebar.grid(row=0, column=0, sticky="ns")
-        sidebar.grid_propagate(False)
-
-        ctk.CTkLabel(
-            sidebar,
-            text="EMPLOYEE",
-            font=ctk.CTkFont(size=20, weight="bold")
-        ).pack(pady=(28, 28))
-
-        self.create_sidebar_button(sidebar, "Dashboard", self.open_dashboard)
-        self.create_sidebar_button(sidebar, "Inventory", self.show_inventory)
-        self.create_sidebar_button(sidebar, "Orders", active=True)
-        self.create_sidebar_button(sidebar, "Employees", self.open_employees)
-        self.create_sidebar_button(sidebar, "History", self.open_history)
+        self.sidebar = EmployeeSidebar(self, self.controller, "orders")
 
         # ===== MAIN =====
         main = ctk.CTkFrame(self)
@@ -70,17 +54,6 @@ class Order(ctk.CTkFrame):
 
         self.show_orders()
 
-    def create_sidebar_button(self, sidebar, text, command=None, active=False):
-        ctk.CTkButton(
-            sidebar,
-            text=text,
-            height=42,
-            fg_color=ACTIVE_BUTTON if active else BUTTON_COLOR,
-            hover_color=BUTTON_HOVER,
-            corner_radius=8,
-            command=command
-        ).pack(fill="x", padx=18, pady=8)
-
     def clear_content(self):
         for widget in self.content.winfo_children():
             widget.destroy()
@@ -96,9 +69,6 @@ class Order(ctk.CTkFrame):
         self.cursor.execute("DELETE FROM inventory WHERE id=?", (data[0],))
         self.conn.commit()
         self.show_orders()
-
-    def show_inventory(self):
-        self.controller.show_page("inventory")
 
     def show_orders(self):
         self.clear_content()
@@ -214,9 +184,9 @@ class Order(ctk.CTkFrame):
         self.detail_frame.grid_columnconfigure((0, 1, 2), weight=1)
 
         if mode == "view":
-            storage = int(data[3] * 0.6)
-            floor = int(data[3] * 0.4)
-            sold = data[3] - floor
+            current_stock = data[3]
+            sold = data[4] or 0
+            total_stock = data[5] or current_stock + sold
 
             ctk.CTkLabel(
                 self.detail_frame,
@@ -226,12 +196,12 @@ class Order(ctk.CTkFrame):
 
             ctk.CTkLabel(
                 self.detail_frame,
-                text=f"Storage Stock: {storage}"
+                text=f"Current Stock: {current_stock}"
             ).grid(row=1, column=0, padx=15, pady=8, sticky="w")
 
             ctk.CTkLabel(
                 self.detail_frame,
-                text=f"Sales Floor: {floor}"
+                text=f"Total Received: {total_stock}"
             ).grid(row=1, column=1, padx=15, pady=8, sticky="w")
 
             ctk.CTkLabel(
@@ -239,12 +209,45 @@ class Order(ctk.CTkFrame):
                 text=f"Sold: {sold}"
             ).grid(row=1, column=2, padx=15, pady=8, sticky="w")
 
+            history = ctk.CTkFrame(self.detail_frame, fg_color="transparent")
+            history.grid(row=2, column=0, columnspan=3, padx=15, pady=(4, 8), sticky="ew")
+            history.grid_columnconfigure(0, weight=1)
+
+            ctk.CTkLabel(
+                history,
+                text="Recent Inventory Changes",
+                font=ctk.CTkFont(weight="bold")
+            ).grid(row=0, column=0, sticky="w", pady=(0, 4))
+
+            self.cursor.execute(
+                """
+                SELECT change_type, quantity, stock_before, stock_after, reference, created_at
+                FROM inventory_transactions
+                WHERE inventory_id=?
+                ORDER BY id DESC
+                LIMIT 5
+                """,
+                (data[0],)
+            )
+            movements = self.cursor.fetchall()
+            if movements:
+                for row_index, movement in enumerate(movements, start=1):
+                    change_type, quantity, before, after, reference, created_at = movement
+                    text = f"{created_at} | {change_type.title()} {quantity} | {before} -> {after} | {reference}"
+                    ctk.CTkLabel(history, text=text, anchor="w").grid(row=row_index, column=0, sticky="w", pady=2)
+            else:
+                ctk.CTkLabel(
+                    history,
+                    text="No inventory changes recorded yet.",
+                    text_color="gray"
+                ).grid(row=1, column=0, sticky="w")
+
             ctk.CTkButton(
                 self.detail_frame,
                 text="Close",
                 width=90,
                 command=self.remove_details
-            ).grid(row=2, column=2, padx=15, pady=(8, 12), sticky="e")
+            ).grid(row=3, column=2, padx=15, pady=(8, 12), sticky="e")
 
         elif mode == "order":
             ctk.CTkLabel(
@@ -259,20 +262,14 @@ class Order(ctk.CTkFrame):
             def add():
                 try:
                     qty = int(qty_entry.get())
-                    self.cursor.execute("SELECT stock FROM inventory WHERE id=?", (data[0],))
-                    current = self.cursor.fetchone()[0]
+                    if qty <= 0:
+                        raise ValueError("Quantity must be greater than zero")
 
-                    new_stock = current + qty
-                    today = datetime.now().strftime("%Y-%m-%d")
-
-                    self.cursor.execute(
-                        "UPDATE inventory SET stock=?, updated=? WHERE id=?",
-                        (new_stock, today, data[0])
-                    )
+                    receive_inventory(self.cursor, data[0], qty, "Employee stock receipt")
                     self.conn.commit()
                     self.show_orders()
-                except:
-                    print("Invalid input")
+                except ValueError as error:
+                    messagebox.showerror("Invalid Quantity", str(error))
 
             ctk.CTkButton(
                 self.detail_frame,
@@ -287,15 +284,6 @@ class Order(ctk.CTkFrame):
                 width=90,
                 command=self.remove_details
             ).grid(row=1, column=2, padx=15, pady=8, sticky="e")
-
-    def open_dashboard(self):
-        self.controller.show_page("dashboard")
-
-    def open_employees(self):
-        self.controller.show_page("employees")
-
-    def open_history(self):
-        self.controller.show_page("history")
 
     def destroy(self):
         try:

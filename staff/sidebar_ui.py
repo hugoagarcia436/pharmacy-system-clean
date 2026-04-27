@@ -24,7 +24,7 @@ class EmployeeSidebar(ctk.CTkFrame):
 
         self.add_button("Dashboard", "dashboard")
         self.add_button("Sales", "sales")
-        self.add_button("View Inventory", "inventory")
+        self.add_button("View Inventory", "sales")
         self.add_button("Update Inventory", "inventory")
         self.add_button("Orders", "orders")
         self.add_button("Customer Records", "customers")

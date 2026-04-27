@@ -1,7 +1,7 @@
 {
-  "name": "Employee User",
-  "email": "employee@email.com",
-  "username": "employee",
-  "role": "employee",
-  "employee_id": "EMP-001"
+  "name": "Customer User",
+  "email": "customer@email.com",
+  "username": "customer",
+  "role": "customer",
+  "employee_id": null
 }

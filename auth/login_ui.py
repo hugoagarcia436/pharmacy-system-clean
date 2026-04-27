@@ -256,6 +256,7 @@ class LoginUI(ctk.CTkFrame):
         if self.login_mode == "employee":
 
             if login_identifier_employee == "" or password_employee == "":
+                conn.close()
                 messagebox.showerror("Error", "Please fill all fields")
                 return
         
@@ -293,6 +294,7 @@ class LoginUI(ctk.CTkFrame):
         else:
 
             if login_identifier_standard == "" or password_standard == "":
+                conn.close()
                 messagebox.showerror("Error", "Please fill all fields")
                 return
         

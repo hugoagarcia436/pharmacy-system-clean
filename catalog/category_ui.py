@@ -63,6 +63,7 @@ class CategoryUI(ctk.CTkFrame):
         self.conn.commit()
 
         self.cart = {}
+        self.feedback_labels = {}
 
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
@@ -88,8 +89,10 @@ class CategoryUI(ctk.CTkFrame):
         self.search_entry.bind("<Return>", lambda event: self.load_items())
         ctk.CTkButton(header, text="Dashboard", command=self.go_to_dashboard).grid(row=0, column=2, padx=5)
         ctk.CTkButton(header, text="Orders", command=self.open_orders).grid(row=0, column=3, padx=5)
-        ctk.CTkButton(header, text="My Cart", command=self.open_cart).grid(row=0, column=4, padx=5)
+        self.cart_button = ctk.CTkButton(header, text="My Cart", command=self.open_cart)
+        self.cart_button.grid(row=0, column=4, padx=5)
         ctk.CTkButton(header, text="Account", command=self.open_account).grid(row=0, column=5, padx=10)
+        self.update_cart_button()
 
     def create_sidebar(self):
         sidebar = ctk.CTkFrame(self, width=220)
@@ -150,6 +153,7 @@ class CategoryUI(ctk.CTkFrame):
         for widget in self.content.winfo_children():
             widget.destroy()
 
+        self.feedback_labels = {}
         self.create_header()
 
         category_values = get_category_where_values(self.category)
@@ -213,17 +217,49 @@ class CategoryUI(ctk.CTkFrame):
             command=lambda d=data, q=qty: self.add_to_cart(d, q),
         ).pack(side="left", padx=3)
 
+        feedback = ctk.CTkLabel(
+            actions,
+            text="",
+            width=120,
+            anchor="w",
+            text_color="#5ee07b",
+            font=ctk.CTkFont(size=12, weight="bold"),
+        )
+        feedback.pack(side="left", padx=(6, 0))
+        self.feedback_labels[data[0]] = feedback
+
     def add_to_cart(self, data, qty_entry):
         try:
             qty = int(qty_entry.get())
         except ValueError:
+            self.show_add_feedback(data[0], "Enter a number", "#ffb347")
             return
 
         if qty <= 0:
+            self.show_add_feedback(data[0], "Qty must be 1+", "#ffb347")
             return
 
         self.cart[data[0]] = self.cart.get(data[0], 0) + qty
         self.save_cart_item(data, qty)
+        self.update_cart_button()
+        self.show_add_feedback(data[0], f"Added {qty} to cart", "#5ee07b")
+
+    def show_add_feedback(self, item_id, message, color):
+        label = self.feedback_labels.get(item_id)
+        if label is None:
+            return
+
+        label.configure(text=message, text_color=color)
+        label.after(2200, lambda current_label=label: current_label.configure(text=""))
+
+    def update_cart_button(self):
+        if not hasattr(self, "cart_button"):
+            return
+
+        cart_items = load_user_cart()
+        total_qty = sum(item.get("qty", 0) for item in cart_items.values())
+        label = "My Cart" if total_qty == 0 else f"My Cart ({total_qty})"
+        self.cart_button.configure(text=label)
 
     def save_cart_item(self, data, qty):
         item_id = str(data[0])

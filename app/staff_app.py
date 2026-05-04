@@ -1,11 +1,9 @@
 import customtkinter as ctk
 
 from staff.employee_dashboard_ui import EmployeeDashboard
-from staff.employee_history_ui import EmployeeHistoryUI
 from staff.employees_ui import EmployeesUI
 from staff.customer_records_ui import CustomerRecordsUI
-from staff.inventory_ui import InventoryUI
-from staff.order_ui import Order
+from staff.inventory_hub_ui import InventoryHubUI
 from staff.process_sales_ui import ProcessSalesUI
 
 
@@ -18,11 +16,10 @@ class StaffApp(ctk.CTk):
         self.pages = {
             "dashboard": EmployeeDashboard,
             "sales": ProcessSalesUI,
-            "inventory": InventoryUI,
-            "orders": Order,
+            "inventory": InventoryHubUI,
+            "inventory_hub": InventoryHubUI,
             "customers": CustomerRecordsUI,
             "employees": EmployeesUI,
-            "history": EmployeeHistoryUI,
         }
 
     def show_page(self, page_name):

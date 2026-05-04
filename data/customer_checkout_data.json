@@ -10,5 +10,17 @@
     "card_number": "1234 1234 1234 1234",
     "expiry": "11/27",
     "cvv": "123"
+  },
+  "Hugo435": {
+    "full_name": "Hugo Alberto",
+    "phone": "956 908 1820",
+    "email": "hugo435@gmail.com",
+    "city": "Brownsville",
+    "address": "2100 Grapefruit st apt 902",
+    "payment_method": "Credit Card",
+    "card_name": "HugoCapital",
+    "card_number": "1234 1234 1234 1234",
+    "expiry": "09/27",
+    "cvv": ""
   }
 }

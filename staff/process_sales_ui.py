@@ -30,6 +30,7 @@ class ProcessSalesUI(ctk.CTkFrame):
 
         self.sale_cart = {}
         self.current_user = get_current_user()
+        self.customer_info_visible = False
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -96,22 +97,43 @@ class ProcessSalesUI(ctk.CTkFrame):
         sale_panel = ctk.CTkFrame(self.main)
         sale_panel.grid(row=1, column=1, sticky="nsew", padx=(8, 15), pady=(0, 15))
         sale_panel.grid_columnconfigure(0, weight=1)
-        sale_panel.grid_rowconfigure(7, weight=1)
+        sale_panel.grid_rowconfigure(8, weight=1)
 
         ctk.CTkLabel(
             sale_panel,
-            text="Customer Transaction",
+            text="Sale Summary",
             font=ctk.CTkFont(size=18, weight="bold")
         ).grid(row=0, column=0, sticky="w", padx=15, pady=(15, 8))
 
-        self.customer_name = ctk.CTkEntry(sale_panel, placeholder_text="Customer name")
-        self.customer_name.grid(row=1, column=0, sticky="ew", padx=15, pady=6)
+        ctk.CTkLabel(
+            sale_panel,
+            text="Walk-in customer by default. Add customer info only for receipt, returns, or rewards.",
+            text_color="gray",
+            wraplength=430,
+            justify="left"
+        ).grid(row=1, column=0, sticky="w", padx=15, pady=(0, 6))
 
-        self.customer_phone = ctk.CTkEntry(sale_panel, placeholder_text="Phone number")
-        self.customer_phone.grid(row=2, column=0, sticky="ew", padx=15, pady=6)
+        self.customer_toggle = ctk.CTkButton(
+            sale_panel,
+            text="Add Customer Info",
+            width=160,
+            fg_color="#5d6570",
+            hover_color="#4b535d",
+            command=self.toggle_customer_info
+        )
+        self.customer_toggle.grid(row=2, column=0, sticky="w", padx=15, pady=6)
 
-        self.customer_email = ctk.CTkEntry(sale_panel, placeholder_text="Email optional")
-        self.customer_email.grid(row=3, column=0, sticky="ew", padx=15, pady=6)
+        self.customer_fields = ctk.CTkFrame(sale_panel, fg_color="transparent")
+        self.customer_fields.grid_columnconfigure(0, weight=1)
+
+        self.customer_name = ctk.CTkEntry(self.customer_fields, placeholder_text="Customer name")
+        self.customer_name.grid(row=0, column=0, sticky="ew", pady=4)
+
+        self.customer_phone = ctk.CTkEntry(self.customer_fields, placeholder_text="Phone number")
+        self.customer_phone.grid(row=1, column=0, sticky="ew", pady=4)
+
+        self.customer_email = ctk.CTkEntry(self.customer_fields, placeholder_text="Email optional")
+        self.customer_email.grid(row=2, column=0, sticky="ew", pady=4)
 
         self.payment_method = ctk.CTkOptionMenu(
             sale_panel,
@@ -128,24 +150,37 @@ class ProcessSalesUI(ctk.CTkFrame):
             sale_panel,
             text="Sale Items",
             font=ctk.CTkFont(size=16, weight="bold")
-        ).grid(row=6, column=0, sticky="w", padx=15, pady=(12, 4))
+        ).grid(row=7, column=0, sticky="w", padx=15, pady=(12, 4))
 
         self.cart_list = ctk.CTkScrollableFrame(sale_panel)
-        self.cart_list.grid(row=7, column=0, sticky="nsew", padx=15, pady=6)
+        self.cart_list.grid(row=8, column=0, sticky="nsew", padx=15, pady=6)
         self.cart_list.grid_columnconfigure(0, weight=1)
 
         self.total_label = ctk.CTkLabel(sale_panel, text="Total: $0.00", font=ctk.CTkFont(size=18, weight="bold"))
-        self.total_label.grid(row=8, column=0, sticky="w", padx=15, pady=(8, 4))
+        self.total_label.grid(row=9, column=0, sticky="w", padx=15, pady=(8, 4))
 
         self.status_label = ctk.CTkLabel(sale_panel, text="", text_color="#7ddc7a", wraplength=430, justify="left")
-        self.status_label.grid(row=9, column=0, sticky="w", padx=15, pady=4)
+        self.status_label.grid(row=10, column=0, sticky="w", padx=15, pady=4)
 
         ctk.CTkButton(
             sale_panel,
             text="Complete Sale",
             height=42,
             command=self.complete_sale
-        ).grid(row=10, column=0, sticky="ew", padx=15, pady=(8, 15))
+        ).grid(row=11, column=0, sticky="ew", padx=15, pady=(8, 15))
+
+    def toggle_customer_info(self):
+        self.customer_info_visible = not self.customer_info_visible
+
+        if self.customer_info_visible:
+            self.customer_fields.grid(row=3, column=0, sticky="ew", padx=15, pady=(0, 6))
+            self.customer_toggle.configure(text="Remove Customer Info")
+        else:
+            self.customer_fields.grid_remove()
+            self.customer_toggle.configure(text="Add Customer Info")
+            self.customer_name.delete(0, "end")
+            self.customer_phone.delete(0, "end")
+            self.customer_email.delete(0, "end")
 
     def reset_search(self):
         self.search_entry.delete(0, "end")
@@ -304,10 +339,6 @@ class ProcessSalesUI(ctk.CTkFrame):
             self.status_label.configure(text="Add at least one item before completing the sale.")
             return
 
-        if not self.customer_name.get().strip():
-            self.status_label.configure(text="Enter the customer name.")
-            return
-
         shortages = validate_cart_stock(self.cursor, self.sale_cart)
         if shortages:
             self.status_label.configure(text="Not enough stock for: " + "; ".join(shortages))
@@ -320,6 +351,7 @@ class ProcessSalesUI(ctk.CTkFrame):
         tax = round(subtotal * 0.07, 2)
         total = subtotal + tax
         employee_name = self.current_user.get("name", "Employee")
+        customer_name = self.customer_name.get().strip() if self.customer_info_visible else ""
 
         order_record = {
             "purchase_id": purchase_id,
@@ -327,9 +359,9 @@ class ProcessSalesUI(ctk.CTkFrame):
             "date": datetime.now().strftime("%B %d, %Y"),
             "processed_by": employee_name,
             "customer": {
-                "full_name": self.customer_name.get().strip(),
-                "phone": self.customer_phone.get().strip(),
-                "email": self.customer_email.get().strip(),
+                "full_name": customer_name or "Walk-in Customer",
+                "phone": self.customer_phone.get().strip() if self.customer_info_visible else "",
+                "email": self.customer_email.get().strip() if self.customer_info_visible else "",
                 "city": "",
                 "address": "In-store sale",
                 "payment_method": self.payment_method.get(),
@@ -475,6 +507,8 @@ class ProcessSalesUI(ctk.CTkFrame):
         self.customer_name.delete(0, "end")
         self.customer_phone.delete(0, "end")
         self.customer_email.delete(0, "end")
+        if self.customer_info_visible:
+            self.toggle_customer_info()
         self.payment_method.set("Cash")
         self.notes.delete("1.0", "end")
         self.notes.insert("1.0", "Transaction notes")

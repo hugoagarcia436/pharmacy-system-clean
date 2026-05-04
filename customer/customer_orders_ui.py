@@ -90,9 +90,9 @@ class CustomerOrdersUI(ctk.CTkFrame):
             ctk.CTkLabel(actions, text=f"${total:.2f}", font=("Arial", 18, "bold")).pack(anchor="e", pady=(0, 10))
             ctk.CTkButton(
                 actions,
-                text="Reorder",
+                text="Details",
                 width=110,
-                command=lambda current_order=order: self.reorder(current_order)
+                command=lambda current_order=order: self.show_order_history(current_order)
             ).pack(anchor="e")
 
     def create_order_thumbnails(self, parent, items):
@@ -170,20 +170,31 @@ class CustomerOrdersUI(ctk.CTkFrame):
 
         ctk.CTkLabel(body, text="Purchased Items", font=("Arial", 18, "bold")).pack(anchor="w", padx=15, pady=(6, 8))
 
+        selected_items = []
         for item in order["items"]:
             item_card = ctk.CTkFrame(body, corner_radius=10)
             item_card.pack(fill="x", padx=15, pady=6)
-            item_card.grid_columnconfigure(1, weight=1)
+            item_card.grid_columnconfigure(2, weight=1)
+
+            selected_var = ctk.BooleanVar(value=True)
+            selected_items.append((selected_var, item))
+
+            ctk.CTkCheckBox(
+                item_card,
+                text="",
+                width=24,
+                variable=selected_var
+            ).grid(row=0, column=0, rowspan=2, padx=(12, 0), pady=12)
 
             image_label = self.create_item_image(item_card, item, size=(82, 82))
-            image_label.grid(row=0, column=0, rowspan=2, padx=12, pady=12)
+            image_label.grid(row=0, column=1, rowspan=2, padx=12, pady=12)
 
-            ctk.CTkLabel(item_card, text=item["name"], font=("Arial", 15, "bold")).grid(row=0, column=1, sticky="w", padx=8, pady=(14, 4))
+            ctk.CTkLabel(item_card, text=item["name"], font=("Arial", 15, "bold")).grid(row=0, column=2, sticky="w", padx=8, pady=(14, 4))
             ctk.CTkLabel(
                 item_card,
                 text=f"Quantity: {item['qty']}  |  Price: ${item['price']:.2f}  |  Line Total: ${item['qty'] * item['price']:.2f}",
                 text_color="gray"
-            ).grid(row=1, column=1, sticky="w", padx=8, pady=(0, 14))
+            ).grid(row=1, column=2, sticky="w", padx=8, pady=(0, 14))
 
         totals_card = ctk.CTkFrame(body, corner_radius=10)
         totals_card.pack(fill="x", padx=15, pady=(10, 15))
@@ -193,12 +204,21 @@ class CustomerOrdersUI(ctk.CTkFrame):
 
         ctk.CTkButton(
             body,
-            text="Reorder Items",
+            text="Add Selected to Cart",
             height=40,
-            command=lambda current_order=order, window=detail_window: self.reorder(current_order, window)
+            command=lambda selections=selected_items, window=detail_window: self.reorder_selected(selections, window)
         ).pack(anchor="w", padx=15, pady=(0, 15))
 
-    def reorder(self, order, detail_window=None):
+    def reorder_selected(self, selected_items, detail_window=None):
+        items_to_reorder = [item for selected_var, item in selected_items if selected_var.get()]
+
+        if not items_to_reorder:
+            messagebox.showwarning("Reorder", "Select at least one item to reorder.")
+            return
+
+        self.reorder(items_to_reorder, detail_window)
+
+    def reorder(self, items, detail_window=None):
         cart_items = load_user_cart()
         added_items = []
         skipped_items = []
@@ -206,7 +226,7 @@ class CustomerOrdersUI(ctk.CTkFrame):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
-        for item in order.get("items", []):
+        for item in items:
             item_id = str(item.get("id"))
             requested_qty = item.get("qty", 0)
 

@@ -7,7 +7,6 @@ from datetime import datetime
 from tkinter import messagebox
 from shared.employee_auth import ensure_employee_user_schema
 from shared.paths import DB_PATH, IMAGES_DIR
-from shared.session_utils import set_current_user
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -288,16 +287,11 @@ class SignUpUI(ctk.CTkFrame):
         )
         self.conn.commit()
 
-        set_current_user({
-            "name": full_name,
-            "email": email,
-            "username": username,
-            "role": "employee",
-            "employee_id": employee_id,
-        })
-
-        messagebox.showinfo("Success", "Account created successfully")
-        self.controller.open_staff_dashboard()
+        messagebox.showinfo(
+            "Success",
+            "Employee account created successfully. Please log in with the new employee credentials."
+        )
+        self.controller.show_page("login")
 
     # ================= TOGGLE =================
     def toggle_employee_fields(self):

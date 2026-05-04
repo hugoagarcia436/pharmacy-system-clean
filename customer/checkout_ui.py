@@ -13,7 +13,6 @@ from shared.session_utils import (
     load_checkout_details,
     save_checkout_details,
     load_payment_methods,
-    save_payment_methods,
 )
 
 ctk.set_appearance_mode("dark")
@@ -84,12 +83,22 @@ class CheckoutUI(ctk.CTkFrame):
         self.email = ctk.CTkEntry(form, placeholder_text="Email Address")
         self.email.grid(row=1, column=0, padx=(0, 8), pady=8, sticky="ew")
 
-        self.city = ctk.CTkEntry(form, placeholder_text="City")
-        self.city.grid(row=1, column=1, padx=(8, 0), pady=8, sticky="ew")
+        self.street_address = ctk.CTkEntry(form, placeholder_text="Street Address")
+        self.street_address.grid(row=1, column=1, padx=(8, 0), pady=8, sticky="ew")
 
-        self.address = ctk.CTkTextbox(form, height=110)
-        self.address.grid(row=2, column=0, columnspan=2, pady=8, sticky="ew")
-        self.address.insert("1.0", "Delivery Address")
+        self.city = ctk.CTkEntry(form, placeholder_text="City")
+        self.city.grid(row=2, column=0, padx=(0, 8), pady=8, sticky="ew")
+
+        address_line = ctk.CTkFrame(form, fg_color="transparent")
+        address_line.grid(row=2, column=1, padx=(8, 0), pady=8, sticky="ew")
+        address_line.grid_columnconfigure(0, weight=1)
+        address_line.grid_columnconfigure(1, weight=1)
+
+        self.state = ctk.CTkEntry(address_line, placeholder_text="State")
+        self.state.grid(row=0, column=0, padx=(0, 8), sticky="ew")
+
+        self.zipcode = ctk.CTkEntry(address_line, placeholder_text="ZIP Code")
+        self.zipcode.grid(row=0, column=1, sticky="ew")
 
         ctk.CTkLabel(
             left,
@@ -112,34 +121,37 @@ class CheckoutUI(ctk.CTkFrame):
         self.saved_payment_menu.grid(row=0, column=1, sticky="ew")
         self.saved_payment_menu.set("Select Saved Payment")
 
-        self.payment_profile_name = ctk.CTkEntry(left, placeholder_text="Payment Profile Name")
-        self.payment_profile_name.grid(row=4, column=0, sticky="ew", padx=20, pady=(0, 10))
-
         self.payment_method = ctk.CTkOptionMenu(
             left,
             values=["Cash on Delivery", "Credit Card", "GCash"]
         )
-        self.payment_method.grid(row=5, column=0, sticky="w", padx=20, pady=(0, 12))
+        self.payment_method.grid(row=4, column=0, sticky="w", padx=20, pady=(0, 12))
 
         card_form = ctk.CTkFrame(left, fg_color="transparent")
-        card_form.grid(row=6, column=0, sticky="ew", padx=20, pady=6)
+        card_form.grid(row=5, column=0, sticky="ew", padx=20, pady=6)
         card_form.grid_columnconfigure(0, weight=1)
         card_form.grid_columnconfigure(1, weight=1)
 
+        ctk.CTkLabel(card_form, text="Name on Card").grid(row=0, column=0, padx=(0, 8), sticky="w")
+        ctk.CTkLabel(card_form, text="Card Number").grid(row=0, column=1, padx=(8, 0), sticky="w")
+
         self.card_name = ctk.CTkEntry(card_form, placeholder_text="Name on Card")
-        self.card_name.grid(row=0, column=0, padx=(0, 8), pady=8, sticky="ew")
+        self.card_name.grid(row=1, column=0, padx=(0, 8), pady=(4, 8), sticky="ew")
 
         self.card_number = ctk.CTkEntry(card_form, placeholder_text="Card Number")
-        self.card_number.grid(row=0, column=1, padx=(8, 0), pady=8, sticky="ew")
+        self.card_number.grid(row=1, column=1, padx=(8, 0), pady=(4, 8), sticky="ew")
+
+        ctk.CTkLabel(card_form, text="Expiry MM/YY").grid(row=2, column=0, padx=(0, 8), sticky="w")
+        ctk.CTkLabel(card_form, text="CVV").grid(row=2, column=1, padx=(8, 0), sticky="w")
 
         self.expiry = ctk.CTkEntry(card_form, placeholder_text="Expiry MM/YY")
-        self.expiry.grid(row=1, column=0, padx=(0, 8), pady=8, sticky="ew")
+        self.expiry.grid(row=3, column=0, padx=(0, 8), pady=(4, 8), sticky="ew")
 
         self.cvv = ctk.CTkEntry(card_form, placeholder_text="CVV")
-        self.cvv.grid(row=1, column=1, padx=(8, 0), pady=8, sticky="ew")
+        self.cvv.grid(row=3, column=1, padx=(8, 0), pady=(4, 8), sticky="ew")
 
         self.notes = ctk.CTkTextbox(left, height=120)
-        self.notes.grid(row=7, column=0, sticky="ew", padx=20, pady=12)
+        self.notes.grid(row=6, column=0, sticky="ew", padx=20, pady=12)
         self.notes.insert("1.0", "Order notes")
 
         self.save_details_var = ctk.BooleanVar(value=bool(self.saved_details))
@@ -148,24 +160,17 @@ class CheckoutUI(ctk.CTkFrame):
             text="Save checkout details for next time",
             variable=self.save_details_var
         )
-        self.save_details_checkbox.grid(row=8, column=0, sticky="w", padx=20, pady=(0, 8))
-
-        ctk.CTkButton(
-            left,
-            text="Save Payment Method",
-            height=38,
-            command=self.save_payment_method
-        ).grid(row=9, column=0, sticky="ew", padx=20, pady=(0, 8))
+        self.save_details_checkbox.grid(row=7, column=0, sticky="w", padx=20, pady=(0, 8))
 
         self.status_label = ctk.CTkLabel(left, text="", text_color="#7ddc7a")
-        self.status_label.grid(row=10, column=0, sticky="w", padx=20, pady=(0, 8))
+        self.status_label.grid(row=8, column=0, sticky="w", padx=20, pady=(0, 8))
 
         ctk.CTkButton(
             left,
             text="Place Order",
             height=46,
             command=self.place_order
-        ).grid(row=11, column=0, sticky="ew", padx=20, pady=(4, 20))
+        ).grid(row=9, column=0, sticky="ew", padx=20, pady=(4, 20))
 
         self.prefill_checkout_details()
 
@@ -238,6 +243,11 @@ class CheckoutUI(ctk.CTkFrame):
             self.status_label.configure(text="Please enter your name and phone number.")
             return
 
+        address_data = self.get_address_data()
+        if not all([address_data["street_address"], address_data["city"], address_data["state"], address_data["zipcode"]]):
+            self.status_label.configure(text="Please complete street address, city, state, and ZIP code.")
+            return
+
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         shortages = validate_cart_stock(cursor, self.cart_items)
@@ -262,8 +272,11 @@ class CheckoutUI(ctk.CTkFrame):
                 "full_name": self.full_name.get().strip(),
                 "phone": self.phone.get().strip(),
                 "email": self.email.get().strip(),
-                "city": self.city.get().strip(),
-                "address": self.address.get("1.0", "end").strip(),
+                "city": address_data["city"],
+                "state": address_data["state"],
+                "zipcode": address_data["zipcode"],
+                "street_address": address_data["street_address"],
+                "address": address_data["address"],
                 "payment_method": self.payment_method.get(),
                 "card_name": self.card_name.get().strip(),
                 "username": self.current_user.get("username", ""),
@@ -299,8 +312,11 @@ class CheckoutUI(ctk.CTkFrame):
                 "full_name": self.full_name.get().strip(),
                 "phone": self.phone.get().strip(),
                 "email": self.email.get().strip(),
-                "city": self.city.get().strip(),
-                "address": self.address.get("1.0", "end").strip(),
+                "city": address_data["city"],
+                "state": address_data["state"],
+                "zipcode": address_data["zipcode"],
+                "street_address": address_data["street_address"],
+                "address": address_data["address"],
                 "payment_method": self.payment_method.get(),
                 "card_name": self.card_name.get().strip(),
                 "card_number": self.card_number.get().strip(),
@@ -319,56 +335,62 @@ class CheckoutUI(ctk.CTkFrame):
     def clear_entry(self, widget):
         widget.delete(0, "end")
 
-    def set_entry_value(self, widget, value):
+    def set_entry_value(self, widget, value, placeholder_text=None):
         self.clear_entry(widget)
+        if placeholder_text is not None:
+            widget.configure(placeholder_text=placeholder_text)
         if value:
             widget.insert(0, value)
 
+    def get_address_data(self):
+        street_address = self.street_address.get().strip()
+        city = self.city.get().strip()
+        state = self.state.get().strip()
+        zipcode = self.zipcode.get().strip()
+        city_state_zip = " ".join(part for part in [city, state, zipcode] if part)
+        address = ", ".join(part for part in [street_address, city_state_zip] if part)
+
+        return {
+            "street_address": street_address,
+            "city": city,
+            "state": state,
+            "zipcode": zipcode,
+            "address": address,
+        }
+
     def reset_checkout_form(self):
-        self.set_entry_value(self.full_name, self.current_user.get("name", ""))
-        self.clear_entry(self.phone)
-        self.set_entry_value(self.email, self.current_user.get("email", ""))
-        self.clear_entry(self.city)
-        self.clear_entry(self.payment_profile_name)
-        self.payment_method.set("Cash on Delivery")
+        details = self.saved_details
+        self.set_entry_value(
+            self.full_name,
+            details.get("full_name", self.current_user.get("name", "")),
+            "Full Name"
+        )
+        self.set_entry_value(self.phone, details.get("phone", ""), "Phone Number")
+        self.set_entry_value(
+            self.email,
+            details.get("email", self.current_user.get("email", "")),
+            "Email Address"
+        )
+        self.set_entry_value(
+            self.street_address,
+            details.get("street_address", details.get("address", "")),
+            "Street Address"
+        )
+        self.set_entry_value(self.city, details.get("city", ""), "City")
+        self.set_entry_value(self.state, details.get("state", ""), "State")
+        self.set_entry_value(self.zipcode, details.get("zipcode", ""), "ZIP Code")
+        self.payment_method.set(details.get("payment_method", "Cash on Delivery"))
 
-        self.address.delete("1.0", "end")
-        self.address.insert("1.0", "Delivery Address")
-
-        self.clear_entry(self.card_name)
-        self.clear_entry(self.card_number)
-        self.clear_entry(self.expiry)
-        self.clear_entry(self.cvv)
+        self.set_entry_value(self.card_name, details.get("card_name", ""), "Name on Card")
+        self.set_entry_value(self.card_number, details.get("card_number", ""), "Card Number")
+        self.set_entry_value(self.expiry, details.get("expiry", ""), "Expiry MM/YY")
+        self.set_entry_value(self.cvv, details.get("cvv", ""), "CVV")
 
         self.notes.delete("1.0", "end")
         self.notes.insert("1.0", "Order notes")
 
         if hasattr(self, "saved_payment_menu"):
             self.saved_payment_menu.set("Select Saved Payment")
-
-    def save_payment_method(self):
-        profile_name = self.payment_profile_name.get().strip()
-
-        if not profile_name:
-            self.status_label.configure(text="Enter a payment profile name first.")
-            return
-
-        self.payment_profiles[profile_name] = {
-            "full_name": self.full_name.get().strip(),
-            "phone": self.phone.get().strip(),
-            "email": self.email.get().strip(),
-            "city": self.city.get().strip(),
-            "address": self.address.get("1.0", "end").strip(),
-            "payment_method": self.payment_method.get(),
-            "card_name": self.card_name.get().strip(),
-            "card_number": self.card_number.get().strip(),
-            "expiry": self.expiry.get().strip(),
-            "cvv": self.cvv.get().strip(),
-        }
-        save_payment_methods(self.payment_profiles)
-        self.saved_payment_menu.configure(values=["Select Saved Payment"] + list(self.payment_profiles.keys()))
-        self.saved_payment_menu.set(profile_name)
-        self.status_label.configure(text=f"Saved payment method: {profile_name}")
 
     def apply_saved_payment_method(self, selected_name):
         if selected_name == "Select Saved Payment":
@@ -379,18 +401,22 @@ class CheckoutUI(ctk.CTkFrame):
         if not details:
             return
 
-        self.set_entry_value(self.payment_profile_name, selected_name)
-        self.set_entry_value(self.full_name, details.get("full_name", ""))
-        self.set_entry_value(self.phone, details.get("phone", ""))
-        self.set_entry_value(self.email, details.get("email", ""))
-        self.set_entry_value(self.city, details.get("city", ""))
-        self.address.delete("1.0", "end")
-        self.address.insert("1.0", details.get("address", ""))
+        self.set_entry_value(self.full_name, details.get("full_name", ""), "Full Name")
+        self.set_entry_value(self.phone, details.get("phone", ""), "Phone Number")
+        self.set_entry_value(self.email, details.get("email", ""), "Email Address")
+        self.set_entry_value(
+            self.street_address,
+            details.get("street_address", details.get("address", "")),
+            "Street Address"
+        )
+        self.set_entry_value(self.city, details.get("city", ""), "City")
+        self.set_entry_value(self.state, details.get("state", ""), "State")
+        self.set_entry_value(self.zipcode, details.get("zipcode", ""), "ZIP Code")
         self.payment_method.set(details.get("payment_method", "Cash on Delivery"))
-        self.set_entry_value(self.card_name, details.get("card_name", ""))
-        self.set_entry_value(self.card_number, details.get("card_number", ""))
-        self.set_entry_value(self.expiry, details.get("expiry", ""))
-        self.set_entry_value(self.cvv, details.get("cvv", ""))
+        self.set_entry_value(self.card_name, details.get("card_name", ""), "Name on Card")
+        self.set_entry_value(self.card_number, details.get("card_number", ""), "Card Number")
+        self.set_entry_value(self.expiry, details.get("expiry", ""), "Expiry MM/YY")
+        self.set_entry_value(self.cvv, details.get("cvv", ""), "CVV")
 
     def open_orders(self):
         self.controller.show_page("customer_orders")

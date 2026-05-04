@@ -38,14 +38,14 @@ class CustomerAccountUI(ctk.CTkFrame):
         display_email = self.current_user.get("email", "N/A")
         ctk.CTkLabel(profile, text=f"Hello, {display_name}", font=("Arial", 22, "bold")).pack(anchor="w", padx=20, pady=10)
         ctk.CTkLabel(profile, text=f"Email: {display_email}", font=("Arial", 14)).pack(anchor="w", padx=20)
-        ctk.CTkButton(profile, text="Edit Profile", command=self.open_security).pack(anchor="w", padx=20, pady=10)
+        ctk.CTkButton(profile, text="Edit Profile", command=self.open_profile).pack(anchor="w", padx=20, pady=10)
 
         def create_box(row, col, title, desc, btn_text, command=None):
             box = ctk.CTkFrame(main, corner_radius=12)
             box.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
 
             ctk.CTkLabel(box, text=title, font=("Arial", 16, "bold")).pack(anchor="w", padx=15, pady=10)
-            ctk.CTkLabel(box, text=desc, wraplength=250).pack(anchor="w", padx=15)
+            ctk.CTkLabel(box, text=desc, wraplength=250, justify="left").pack(anchor="w", padx=15)
             ctk.CTkButton(box, text=btn_text, command=command).pack(anchor="w", padx=15, pady=10)
 
         create_box(1, 0, "Your Orders", "Track, return, or buy again", "View Orders", self.open_orders)
@@ -74,6 +74,9 @@ class CustomerAccountUI(ctk.CTkFrame):
 
     def open_payments(self):
         self.controller.show_page("customer_payments")
+
+    def open_profile(self):
+        self.controller.show_page("customer_profile")
 
     def open_security(self):
         self.controller.show_page("customer_security")

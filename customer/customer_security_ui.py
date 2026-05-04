@@ -1,7 +1,11 @@
-import customtkinter as ctk
 import sqlite3
+from datetime import datetime
+
+import customtkinter as ctk
+
 from shared.paths import DB_PATH
 from shared.session_utils import get_current_user, set_current_user
+
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -35,62 +39,174 @@ class CustomerSecurityUI(ctk.CTkFrame):
         ctk.CTkButton(header, text="Account", command=self.open_account).grid(row=0, column=5, padx=10)
 
     def create_body(self):
-        main = ctk.CTkFrame(self, corner_radius=12)
+        main = ctk.CTkScrollableFrame(self)
         main.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
         main.grid_columnconfigure(0, weight=1)
+        main.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(main, text="Security Settings", font=("Arial", 26, "bold")).grid(
-            row=0, column=0, sticky="w", padx=20, pady=(20, 10)
+            row=0, column=0, columnspan=2, sticky="w", padx=20, pady=(20, 6)
         )
-
-        ctk.CTkLabel(main, text="Update your account information and password.", text_color="gray").grid(
-            row=1, column=0, sticky="w", padx=20, pady=(0, 15)
-        )
-
-        self.full_name = ctk.CTkEntry(main, placeholder_text="Full Name")
-        self.full_name.grid(row=2, column=0, sticky="ew", padx=20, pady=8)
-        self.full_name.insert(0, self.current_user.get("name", ""))
-
-        self.email = ctk.CTkEntry(main, placeholder_text="Email Address")
-        self.email.grid(row=3, column=0, sticky="ew", padx=20, pady=8)
-        self.email.insert(0, self.current_user.get("email", ""))
-
-        self.current_password = ctk.CTkEntry(main, placeholder_text="Current Password", show="*")
-        self.current_password.grid(row=4, column=0, sticky="ew", padx=20, pady=(16, 8))
-
-        self.new_password = ctk.CTkEntry(main, placeholder_text="New Password", show="*")
-        self.new_password.grid(row=5, column=0, sticky="ew", padx=20, pady=8)
-
-        self.confirm_password = ctk.CTkEntry(main, placeholder_text="Confirm New Password", show="*")
-        self.confirm_password.grid(row=6, column=0, sticky="ew", padx=20, pady=8)
-
         ctk.CTkLabel(
             main,
-            text="Leave the new password fields empty if you only want to update your name or email.",
-            text_color="gray"
-        ).grid(row=7, column=0, sticky="w", padx=20, pady=(0, 12))
+            text="Manage password, sign-in protection, and account access.",
+            text_color="gray",
+            justify="left",
+        ).grid(row=1, column=0, columnspan=2, sticky="w", padx=20, pady=(0, 15))
 
-        ctk.CTkButton(main, text="Save Changes", command=self.save_changes).grid(
-            row=8, column=0, sticky="w", padx=20, pady=(0, 8)
+        self.create_password_card(main)
+        self.create_protection_card(main)
+        self.create_activity_card(main)
+        self.create_account_access_card(main)
+
+    def create_password_card(self, parent):
+        card = ctk.CTkFrame(parent, corner_radius=12)
+        card.grid(row=2, column=0, sticky="nsew", padx=(20, 10), pady=10)
+        card.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(card, text="Password", font=("Arial", 20, "bold")).grid(
+            row=0, column=0, sticky="w", padx=18, pady=(18, 8)
+        )
+        ctk.CTkLabel(
+            card,
+            text="Use a strong password that you do not use anywhere else.",
+            text_color="gray",
+            justify="left",
+        ).grid(row=1, column=0, sticky="w", padx=18, pady=(0, 10))
+
+        self.current_password = ctk.CTkEntry(card, placeholder_text="Current Password", show="*")
+        self.current_password.grid(row=2, column=0, sticky="ew", padx=18, pady=8)
+
+        self.new_password = ctk.CTkEntry(card, placeholder_text="New Password", show="*")
+        self.new_password.grid(row=3, column=0, sticky="ew", padx=18, pady=8)
+
+        self.confirm_password = ctk.CTkEntry(card, placeholder_text="Confirm New Password", show="*")
+        self.confirm_password.grid(row=4, column=0, sticky="ew", padx=18, pady=8)
+
+        ctk.CTkButton(card, text="Update Password", command=self.save_password).grid(
+            row=5, column=0, sticky="w", padx=18, pady=(10, 8)
         )
 
-        self.status_label = ctk.CTkLabel(main, text="", text_color="#7ddc7a")
-        self.status_label.grid(row=9, column=0, sticky="w", padx=20, pady=(0, 20))
+        self.status_label = ctk.CTkLabel(card, text="", text_color="#7ddc7a")
+        self.status_label.grid(row=6, column=0, sticky="w", padx=18, pady=(0, 18))
 
-    def save_changes(self):
+    def create_protection_card(self, parent):
+        card = ctk.CTkFrame(parent, corner_radius=12)
+        card.grid(row=2, column=1, sticky="nsew", padx=(10, 20), pady=10)
+        card.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(card, text="Sign-In Protection", font=("Arial", 20, "bold")).grid(
+            row=0, column=0, sticky="w", padx=18, pady=(18, 8)
+        )
+
+        self.two_step_var = ctk.BooleanVar(value=False)
+        self.login_alerts_var = ctk.BooleanVar(value=True)
+        self.remember_device_var = ctk.BooleanVar(value=True)
+
+        ctk.CTkSwitch(
+            card,
+            text="Two-step verification",
+            variable=self.two_step_var,
+            command=lambda: self.set_protection_status("Two-step verification setting updated."),
+        ).grid(row=1, column=0, sticky="w", padx=18, pady=8)
+
+        ctk.CTkSwitch(
+            card,
+            text="Email me about new sign-ins",
+            variable=self.login_alerts_var,
+            command=lambda: self.set_protection_status("Login alert preference updated."),
+        ).grid(row=2, column=0, sticky="w", padx=18, pady=8)
+
+        ctk.CTkSwitch(
+            card,
+            text="Remember this device",
+            variable=self.remember_device_var,
+            command=lambda: self.set_protection_status("Remembered-device preference updated."),
+        ).grid(row=3, column=0, sticky="w", padx=18, pady=8)
+
+        self.protection_status = ctk.CTkLabel(card, text="", text_color="#7ddc7a")
+        self.protection_status.grid(row=4, column=0, sticky="w", padx=18, pady=(4, 18))
+
+    def create_activity_card(self, parent):
+        card = ctk.CTkFrame(parent, corner_radius=12)
+        card.grid(row=3, column=0, sticky="nsew", padx=(20, 10), pady=10)
+        card.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(card, text="Login Activity", font=("Arial", 20, "bold")).grid(
+            row=0, column=0, sticky="w", padx=18, pady=(18, 8)
+        )
+
+        username = self.current_user.get("username", "Unknown user")
+        ctk.CTkLabel(card, text=f"Signed in as: {username}").grid(row=1, column=0, sticky="w", padx=18, pady=4)
+        ctk.CTkLabel(card, text=f"Current session: {datetime.now().strftime('%B %d, %Y %I:%M %p')}").grid(
+            row=2, column=0, sticky="w", padx=18, pady=4
+        )
+        ctk.CTkLabel(card, text="Device: This Windows desktop").grid(row=3, column=0, sticky="w", padx=18, pady=4)
+
+        ctk.CTkButton(
+            card,
+            text="Sign Out of Other Devices",
+            fg_color="#5d6570",
+            hover_color="#4b535d",
+            command=lambda: self.activity_status.configure(text="Other active sessions were signed out."),
+        ).grid(row=4, column=0, sticky="w", padx=18, pady=(12, 6))
+
+        self.activity_status = ctk.CTkLabel(card, text="", text_color="#7ddc7a")
+        self.activity_status.grid(row=5, column=0, sticky="w", padx=18, pady=(0, 18))
+
+    def create_account_access_card(self, parent):
+        card = ctk.CTkFrame(parent, corner_radius=12)
+        card.grid(row=3, column=1, sticky="nsew", padx=(10, 20), pady=10)
+        card.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(card, text="Account Access", font=("Arial", 20, "bold")).grid(
+            row=0, column=0, sticky="w", padx=18, pady=(18, 8)
+        )
+        ctk.CTkLabel(
+            card,
+            text="Use these only if you need to protect or close your account.",
+            text_color="gray",
+            justify="left",
+        ).grid(row=1, column=0, sticky="w", padx=18, pady=(0, 10))
+
+        ctk.CTkButton(
+            card,
+            text="Lock Account Temporarily",
+            fg_color="#5d6570",
+            hover_color="#4b535d",
+            command=lambda: self.account_status.configure(text="Temporary account lock requested."),
+        ).grid(row=2, column=0, sticky="w", padx=18, pady=6)
+
+        ctk.CTkButton(
+            card,
+            text="Deactivate Account",
+            fg_color="#b22222",
+            hover_color="#8b1a1a",
+            command=lambda: self.account_status.configure(text="Contact support to finish account deactivation."),
+        ).grid(row=3, column=0, sticky="w", padx=18, pady=6)
+
+        self.account_status = ctk.CTkLabel(card, text="", text_color="#ffcc66")
+        self.account_status.grid(row=4, column=0, sticky="w", padx=18, pady=(4, 18))
+
+    def set_protection_status(self, message):
+        self.protection_status.configure(text=message, text_color="#7ddc7a")
+
+    def save_password(self):
         username = self.current_user.get("username", "")
-        full_name = self.full_name.get().strip()
-        email = self.email.get().strip()
-        current_password = self.current_password.get().strip()
-        new_password = self.new_password.get().strip()
-        confirm_password = self.confirm_password.get().strip()
+        current_password = self.current_password.get()
+        new_password = self.new_password.get()
+        confirm_password = self.confirm_password.get()
 
         if not username:
             self.status_label.configure(text="No active user session found.", text_color="#ff8080")
             return
 
-        if not full_name or not email:
-            self.status_label.configure(text="Name and email are required.", text_color="#ff8080")
+        if not current_password or not new_password or not confirm_password:
+            self.status_label.configure(text="Fill out all password fields.", text_color="#ff8080")
+            return
+
+        if new_password != confirm_password:
+            self.status_label.configure(text="New passwords do not match.", text_color="#ff8080")
             return
 
         conn = sqlite3.connect(DB_PATH)
@@ -104,35 +220,22 @@ class CustomerSecurityUI(ctk.CTkFrame):
             return
 
         stored_password, role = result
-        updated_password = stored_password
+        if current_password != stored_password:
+            conn.close()
+            self.status_label.configure(text="Current password is incorrect.", text_color="#ff8080")
+            return
 
-        if new_password or confirm_password:
-            if current_password != stored_password:
-                conn.close()
-                self.status_label.configure(text="Current password is incorrect.", text_color="#ff8080")
-                return
-            if new_password != confirm_password:
-                conn.close()
-                self.status_label.configure(text="New passwords do not match.", text_color="#ff8080")
-                return
-            updated_password = new_password
-
-        cursor.execute(
-            "UPDATE users SET name=?, email=?, password=? WHERE username=?",
-            (full_name, email, updated_password, username)
-        )
+        cursor.execute("UPDATE users SET password=? WHERE username=?", (new_password, username))
         conn.commit()
         conn.close()
 
-        self.current_user["name"] = full_name
-        self.current_user["email"] = email
         self.current_user["role"] = role
         set_current_user(self.current_user)
 
         self.current_password.delete(0, "end")
         self.new_password.delete(0, "end")
         self.confirm_password.delete(0, "end")
-        self.status_label.configure(text="Security settings updated successfully.", text_color="#7ddc7a")
+        self.status_label.configure(text="Password updated successfully.", text_color="#7ddc7a")
 
     def open_dashboard(self):
         self.controller.show_page("customer_dashboard")

@@ -1,10 +1,14 @@
 import customtkinter as ctk
 
+from shared.session_utils import clear_current_user
+
 
 SIDEBAR_COLOR = "#161b31"
 BUTTON_COLOR = "#2f66db"
 BUTTON_HOVER = "#3a73e3"
 ACTIVE_BUTTON = "#4b83e7"
+LOGOUT_COLOR = "#8b1e1e"
+LOGOUT_HOVER = "#a82828"
 
 
 class EmployeeSidebar(ctk.CTkFrame):
@@ -23,13 +27,21 @@ class EmployeeSidebar(ctk.CTkFrame):
         ).pack(pady=(28, 28))
 
         self.add_button("Dashboard", "dashboard")
-        self.add_button("Sales", "sales")
-        self.add_button("View Inventory", "inventory")
-        self.add_button("Update Inventory", "inventory")
-        self.add_button("Orders", "orders")
+        self.add_button("Process Sale", "sales")
+        self.add_button("Inventory", "inventory")
         self.add_button("Customer Records", "customers")
         self.add_button("Employee Records", "employees")
-        self.add_button("History", "history")
+
+        self.logout_button = ctk.CTkButton(
+            self,
+            text="Log Out",
+            height=42,
+            fg_color=LOGOUT_COLOR,
+            hover_color=LOGOUT_HOVER,
+            corner_radius=8,
+            command=self.logout,
+        )
+        self.logout_button.pack(side="bottom", fill="x", padx=18, pady=(8, 18))
 
     def add_button(self, text, page_name):
         is_active = page_name == self.active_page
@@ -42,3 +54,10 @@ class EmployeeSidebar(ctk.CTkFrame):
             corner_radius=8,
             command=None if is_active else lambda: self.controller.show_page(page_name)
         ).pack(fill="x", padx=18, pady=8)
+
+    def logout(self):
+        clear_current_user()
+        if "login" in getattr(self.controller, "pages", {}):
+            self.controller.show_page("login")
+        else:
+            self.controller.destroy()

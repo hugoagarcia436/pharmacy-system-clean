@@ -16,5 +16,35 @@
       "qty": 1,
       "image": "Allergy Pills.jpg"
     }
+  },
+  "Hugo435": {
+    "6": {
+      "id": 6,
+      "name": "Allergy Pills",
+      "price": 11.0,
+      "qty": 1,
+      "image": "Allergy Pills.jpg"
+    },
+    "3": {
+      "id": 3,
+      "name": "Amoxicillin",
+      "price": 25.0,
+      "qty": 1,
+      "image": "Amoxicillin.png"
+    },
+    "7": {
+      "id": 7,
+      "name": "Antibiotic Cream",
+      "price": 18.0,
+      "qty": 1,
+      "image": "Antibiotic Cream.jpg"
+    },
+    "4": {
+      "id": 4,
+      "name": "Aspirin",
+      "price": 9.0,
+      "qty": 1,
+      "image": "Paracetamol.png"
+    }
   }
 }

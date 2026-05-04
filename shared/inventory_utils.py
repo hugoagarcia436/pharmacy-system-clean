@@ -17,6 +17,17 @@ def inventory_status(stock):
     return "In Stock"
 
 
+def inventory_status_color(status):
+    normalized = str(status).strip().lower()
+    if normalized == "out of stock":
+        return "#ff4d4d"
+    if normalized == "low stock":
+        return "#ff4d4d"
+    if normalized == "in stock":
+        return "#00c853"
+    return "white"
+
+
 def ensure_inventory_transaction_schema(cursor):
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS inventory_transactions (

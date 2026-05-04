@@ -18,8 +18,8 @@ class EmployeeDashboard(ctk.CTkFrame):
         self.controller.geometry("1200x700")
 
         # ========== LAYOUT ==========
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=3)
+        self.grid_columnconfigure(0, weight=0)
+        self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
         self.sidebar = EmployeeSidebar(self, self.controller, "dashboard")

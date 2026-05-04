@@ -426,15 +426,25 @@ class CustomerRecordsUI(ctk.CTkFrame):
     def show_order_detail(self, order):
         detail_window = ctk.CTkToplevel(self)
         detail_window.title(order.get("purchase_id", "Order"))
-        detail_window.geometry("760x660")
+        detail_window.geometry("800x760")
         detail_window.grid_columnconfigure(0, weight=1)
         detail_window.grid_rowconfigure(1, weight=1)
 
+        header = ctk.CTkFrame(detail_window)
+        header.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 10))
+        header.grid_columnconfigure(0, weight=1)
+
         ctk.CTkLabel(
-            detail_window,
-            text=f"Order Detail: {order.get('purchase_id', 'N/A')}",
-            font=ctk.CTkFont(size=24, weight="bold")
-        ).grid(row=0, column=0, sticky="w", padx=20, pady=(20, 10))
+            header,
+            text="Pharmacy+",
+            font=ctk.CTkFont(size=28, weight="bold")
+        ).grid(row=0, column=0, sticky="w", padx=14, pady=(14, 2))
+
+        ctk.CTkLabel(
+            header,
+            text="Customer Receipt",
+            text_color="gray"
+        ).grid(row=1, column=0, sticky="w", padx=14, pady=(0, 12))
 
         body = ctk.CTkScrollableFrame(detail_window)
         body.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
@@ -442,50 +452,112 @@ class CustomerRecordsUI(ctk.CTkFrame):
 
         customer = order.get("customer", {})
         summary = order.get("summary", {})
-        lines = [
-            f"Status: {order.get('status', 'N/A')}",
-            f"Date: {order.get('date', 'N/A')}",
-            f"Customer: {customer.get('full_name', 'N/A')}",
-            f"Phone: {customer.get('phone', 'N/A')}",
-            f"Email: {customer.get('email', 'N/A') or 'N/A'}",
-            f"Address: {customer.get('address', 'N/A')}",
-            f"Payment: {customer.get('payment_method', 'N/A')}",
-            f"Processed By: {order.get('processed_by', 'Online checkout')}",
-            f"Notes: {order.get('notes', 'None') or 'None'}",
-        ]
 
-        for row, line in enumerate(lines):
-            ctk.CTkLabel(body, text=line, anchor="w", wraplength=680, justify="left").grid(
-                row=row,
-                column=0,
-                sticky="w",
-                padx=10,
-                pady=4,
+        receipt_meta = ctk.CTkFrame(body, corner_radius=10)
+        receipt_meta.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 8))
+        receipt_meta.grid_columnconfigure(0, weight=1)
+        receipt_meta.grid_columnconfigure(1, weight=1)
+
+        self.add_receipt_pair(receipt_meta, 0, 0, "Receipt No.", order.get("purchase_id", "N/A"))
+        self.add_receipt_pair(receipt_meta, 1, 0, "Date", order.get("date", "N/A"))
+        self.add_receipt_pair(receipt_meta, 0, 1, "Status", order.get("status", "N/A"))
+        self.add_receipt_pair(receipt_meta, 1, 1, "Processed By", order.get("processed_by", "Online checkout"))
+
+        details = ctk.CTkFrame(body, corner_radius=10)
+        details.grid(row=1, column=0, sticky="ew", padx=10, pady=8)
+        details.grid_columnconfigure(0, weight=1)
+        details.grid_columnconfigure(1, weight=1)
+
+        customer_block = ctk.CTkFrame(details, fg_color="transparent")
+        customer_block.grid(row=0, column=0, sticky="nsew", padx=14, pady=14)
+        customer_block.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(customer_block, text="Customer", font=ctk.CTkFont(size=17, weight="bold")).grid(
+            row=0, column=0, sticky="w", pady=(0, 8)
+        )
+        self.add_block_line(customer_block, 1, customer.get("full_name", "N/A"))
+        self.add_block_line(customer_block, 2, f"Phone: {customer.get('phone') or 'N/A'}")
+        self.add_block_line(customer_block, 3, f"Email: {customer.get('email') or 'N/A'}")
+        self.add_block_line(customer_block, 4, f"Address: {customer.get('address') or 'N/A'}")
+
+        payment_block = ctk.CTkFrame(details, fg_color="transparent")
+        payment_block.grid(row=0, column=1, sticky="nsew", padx=14, pady=14)
+        payment_block.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(payment_block, text="Payment", font=ctk.CTkFont(size=17, weight="bold")).grid(
+            row=0, column=0, sticky="w", pady=(0, 8)
+        )
+        self.add_block_line(payment_block, 1, f"Method: {customer.get('payment_method') or 'N/A'}")
+        self.add_block_line(payment_block, 2, f"Card Name: {customer.get('card_name') or 'N/A'}")
+        self.add_block_line(payment_block, 3, f"Notes: {order.get('notes') or 'None'}")
+
+        items_card = ctk.CTkFrame(body, corner_radius=10)
+        items_card.grid(row=2, column=0, sticky="ew", padx=10, pady=8)
+        items_card.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(items_card, text="Items Purchased", font=ctk.CTkFont(size=17, weight="bold")).grid(
+            row=0, column=0, sticky="w", padx=14, pady=(14, 8)
+        )
+
+        table = ctk.CTkFrame(items_card, fg_color="transparent")
+        table.grid(row=1, column=0, sticky="ew", padx=14, pady=(0, 14))
+        table.grid_columnconfigure(0, weight=3)
+        table.grid_columnconfigure((1, 2, 3), weight=1)
+
+        headers = ["Item", "Qty", "Price", "Line Total"]
+        for col, text in enumerate(headers):
+            ctk.CTkLabel(table, text=text, font=ctk.CTkFont(weight="bold"), anchor="w").grid(
+                row=0, column=col, sticky="ew", padx=6, pady=(0, 6)
             )
 
-        ctk.CTkLabel(
-            body,
-            text="Items",
-            font=ctk.CTkFont(size=18, weight="bold")
-        ).grid(row=len(lines), column=0, sticky="w", padx=10, pady=(14, 6))
-
-        for index, item in enumerate(order.get("items", []), start=len(lines) + 1):
+        for index, item in enumerate(order.get("items", []), start=1):
             qty = item.get("qty", 0)
             price = item.get("price", 0)
-            ctk.CTkLabel(
-                body,
-                text=f"{item.get('name', 'Item')} | Qty: {qty} | Price: ${price:.2f} | Line Total: ${qty * price:.2f}",
-                anchor="w",
-                wraplength=680,
-                justify="left"
-            ).grid(row=index, column=0, sticky="w", padx=10, pady=4)
+            line_total = qty * price
+            values = [item.get("name", "Item"), str(qty), f"${price:.2f}", f"${line_total:.2f}"]
+            for col, value in enumerate(values):
+                ctk.CTkLabel(table, text=value, anchor="w").grid(
+                    row=index,
+                    column=col,
+                    sticky="ew",
+                    padx=6,
+                    pady=4,
+                )
 
-        total_row = len(lines) + len(order.get("items", [])) + 2
-        ctk.CTkLabel(
-            body,
-            text=f"Subtotal: ${summary.get('subtotal', 0):.2f} | Tax: ${summary.get('tax', 0):.2f} | Total: ${summary.get('total', 0):.2f}",
-            font=ctk.CTkFont(size=16, weight="bold")
-        ).grid(row=total_row, column=0, sticky="w", padx=10, pady=(14, 8))
+        totals_card = ctk.CTkFrame(body, corner_radius=10)
+        totals_card.grid(row=3, column=0, sticky="e", padx=10, pady=(8, 14))
+        totals_card.grid_columnconfigure(0, weight=1)
+        totals_card.grid_columnconfigure(1, weight=1)
+
+        self.add_total_line(totals_card, 0, "Subtotal", summary.get("subtotal", 0))
+        self.add_total_line(totals_card, 1, "Tax", summary.get("tax", 0))
+        self.add_total_line(totals_card, 2, "Total", summary.get("total", 0), bold=True)
+
+        ctk.CTkButton(
+            detail_window,
+            text="Close",
+            command=detail_window.destroy
+        ).grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 20))
+
+    def add_receipt_pair(self, parent, row, column, label, value):
+        holder = ctk.CTkFrame(parent, fg_color="transparent")
+        holder.grid(row=row, column=column, sticky="ew", padx=14, pady=8)
+        holder.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(holder, text=label, text_color="gray").grid(row=0, column=0, sticky="w")
+        ctk.CTkLabel(holder, text=value, font=ctk.CTkFont(weight="bold")).grid(row=1, column=0, sticky="w")
+
+    def add_block_line(self, parent, row, text):
+        ctk.CTkLabel(parent, text=text, wraplength=320, justify="left", anchor="w").grid(
+            row=row,
+            column=0,
+            sticky="w",
+            pady=3,
+        )
+
+    def add_total_line(self, parent, row, label, amount, bold=False):
+        font = ctk.CTkFont(size=16, weight="bold") if bold else None
+        ctk.CTkLabel(parent, text=f"{label}:", font=font).grid(row=row, column=0, sticky="e", padx=(18, 8), pady=5)
+        ctk.CTkLabel(parent, text=f"${amount:.2f}", font=font).grid(row=row, column=1, sticky="e", padx=(8, 18), pady=5)
 
     def customer_total_spent(self, orders):
         return sum(order.get("summary", {}).get("total", 0) for order in orders)

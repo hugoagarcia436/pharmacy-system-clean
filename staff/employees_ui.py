@@ -131,6 +131,7 @@ class EmployeesUI(ctk.CTkFrame):
         self.employees = self.load_employees_from_database()
         self.filtered_employees = self.employees[:]
         self.detail_frame = None
+        self.detail_mode = None
 
         self.sidebar = EmployeeSidebar(self, self.controller, "employees")
 
@@ -195,6 +196,11 @@ class EmployeesUI(ctk.CTkFrame):
         if self.detail_frame is not None and self.detail_frame.winfo_exists():
             self.detail_frame.destroy()
             self.detail_frame = None
+        self.detail_mode = None
+
+    def close_details(self):
+        self.remove_details()
+        self.show_directory_overview()
 
     def refresh_filters(self):
         query = self.search_entry.get().strip().lower()
@@ -222,6 +228,8 @@ class EmployeesUI(ctk.CTkFrame):
 
         self.filtered_employees = results
         self.render_table()
+        if self.detail_mode == "overview":
+            self.show_directory_overview()
 
     def clear_filters(self):
         self.search_entry.delete(0, "end")
@@ -230,6 +238,7 @@ class EmployeesUI(ctk.CTkFrame):
         self.status_filter.set("All Status")
         self.filtered_employees = self.employees[:]
         self.render_table()
+        self.show_directory_overview()
 
     def generate_new_employee_id(self):
         return generate_employee_id(self.cursor)
@@ -250,6 +259,8 @@ class EmployeesUI(ctk.CTkFrame):
         emp["status"] = new_status
         emp["activity"] = new_activity
         self.render_table()
+        if self.detail_mode == "overview":
+            self.show_directory_overview()
 
     def reset_password(self, emp):
         self.cursor.execute(
@@ -346,6 +357,7 @@ class EmployeesUI(ctk.CTkFrame):
         self.detail_host = ctk.CTkFrame(container, fg_color="transparent")
         self.detail_host.grid(row=2, column=0, sticky="ew", padx=10, pady=(0, 8))
         self.detail_host.grid_columnconfigure(0, weight=1)
+        self.show_directory_overview()
 
         # =========================
         # TABLE HOLDER
@@ -359,12 +371,77 @@ class EmployeesUI(ctk.CTkFrame):
     # =========================
     # TABLE
     # =========================
+    def show_directory_overview(self):
+        self.remove_details()
+        self.detail_mode = "overview"
+
+        employees = self.filtered_employees
+        total = len(employees)
+        active = sum(1 for emp in employees if emp["status"] == "Active")
+        suspended = sum(1 for emp in employees if emp["status"] == "Suspended")
+        unassigned = sum(1 for emp in employees if emp["shift"] == "Unassigned")
+        pending = sum(1 for emp in employees if "pending" in emp["activity"].lower())
+
+        self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#1f1f1f", corner_radius=10)
+        self.detail_frame.grid(row=0, column=0, sticky="ew")
+        self.detail_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
+
+        ctk.CTkLabel(
+            self.detail_frame,
+            text="Directory Overview",
+            font=ctk.CTkFont(size=18, weight="bold")
+        ).grid(row=0, column=0, columnspan=4, padx=15, pady=(12, 6), sticky="w")
+
+        ctk.CTkLabel(
+            self.detail_frame,
+            text="Select View for full employee details, Shift to update a schedule, or use Suspend/Activate for account status.",
+            text_color="gray",
+            wraplength=850,
+            justify="left"
+        ).grid(row=1, column=0, columnspan=4, padx=15, pady=(0, 10), sticky="w")
+
+        stats = [
+            ("Visible Employees", total, "Current filtered results"),
+            ("Active", active, "Employees able to sign in"),
+            ("Suspended", suspended, "Accounts blocked from normal use"),
+            ("Unassigned Shifts", unassigned, "Need schedule assignment"),
+            ("Password Setup Pending", pending, "Need password setup or reset"),
+        ]
+
+        for index, (title, value, subtitle) in enumerate(stats):
+            card = ctk.CTkFrame(self.detail_frame, fg_color="#252525", corner_radius=8)
+            card.grid(row=2 + index // 4, column=index % 4, padx=10, pady=(8, 12), sticky="nsew")
+            card.grid_columnconfigure(0, weight=1)
+
+            ctk.CTkLabel(
+                card,
+                text=title,
+                font=ctk.CTkFont(weight="bold"),
+                anchor="w"
+            ).grid(row=0, column=0, sticky="w", padx=12, pady=(10, 2))
+
+            ctk.CTkLabel(
+                card,
+                text=str(value),
+                font=ctk.CTkFont(size=22, weight="bold"),
+                anchor="w"
+            ).grid(row=1, column=0, sticky="w", padx=12, pady=2)
+
+            ctk.CTkLabel(
+                card,
+                text=subtitle,
+                text_color="gray",
+                anchor="w",
+                wraplength=190,
+                justify="left"
+            ).grid(row=2, column=0, sticky="w", padx=12, pady=(2, 10))
+
     def render_table(self):
         for widget in self.table_holder.winfo_children():
             widget.destroy()
 
         headers = ["Employee ID", "Name", "Role", "Shift", "Status", "Actions"]
-        col_widths = [120, 220, 130, 120, 120, 300]
+        col_widths = [120, 240, 140, 130, 120, 260]
 
         table = ctk.CTkFrame(self.table_holder, fg_color="transparent")
         table.grid(row=0, column=0, sticky="ew")
@@ -448,13 +525,6 @@ class EmployeesUI(ctk.CTkFrame):
                 command=lambda e=emp: self.show_shift_panel(e)
             ).pack(side="left", padx=3)
 
-            ctk.CTkButton(
-                actions,
-                text="Reset",
-                width=60,
-                command=lambda e=emp: self.reset_password(e)
-            ).pack(side="left", padx=3)
-
             status_btn_text = "Suspend" if emp["status"] == "Active" else "Activate"
             status_btn_color = "#8b0000" if emp["status"] == "Active" else "#2e7d32"
 
@@ -501,6 +571,7 @@ class EmployeesUI(ctk.CTkFrame):
 
     def show_employee_detail(self, emp):
         self.remove_details()
+        self.detail_mode = "detail"
 
         self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#1f1f1f", corner_radius=10)
         self.detail_frame.grid(row=0, column=0, sticky="ew")
@@ -567,7 +638,7 @@ class EmployeesUI(ctk.CTkFrame):
             action_bar,
             text="Close",
             width=80,
-            command=self.remove_details
+            command=self.close_details
         ).pack(side="left", padx=5)
 
     # =========================
@@ -575,6 +646,7 @@ class EmployeesUI(ctk.CTkFrame):
     # =========================
     def show_shift_panel(self, emp):
         self.remove_details()
+        self.detail_mode = "shift"
 
         self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#1f1f1f", corner_radius=10)
         self.detail_frame.grid(row=0, column=0, sticky="ew")
@@ -604,7 +676,7 @@ class EmployeesUI(ctk.CTkFrame):
             self.detail_frame,
             text="Close",
             width=80,
-            command=self.remove_details
+            command=self.close_details
         ).grid(row=1, column=2, padx=15, pady=8, sticky="e")
 
     # =========================
@@ -612,6 +684,7 @@ class EmployeesUI(ctk.CTkFrame):
     # =========================
     def show_add_employee_form(self):
         self.remove_details()
+        self.detail_mode = "add"
 
         self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#1f1f1f", corner_radius=10)
         self.detail_frame.grid(row=0, column=0, sticky="ew")
@@ -719,6 +792,7 @@ class EmployeesUI(ctk.CTkFrame):
 
             self.refresh_employee_list()
             self.remove_details()
+            self.show_directory_overview()
             self.render_table()
             messagebox.showinfo(
                 "Employee Created",
@@ -739,7 +813,7 @@ class EmployeesUI(ctk.CTkFrame):
             action_bar,
             text="Close",
             width=90,
-            command=self.remove_details
+            command=self.close_details
         ).pack(side="left", padx=5)
 
     def destroy(self):

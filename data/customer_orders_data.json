@@ -139,5 +139,56 @@
       "tax": 2.52,
       "total": 38.52
     }
+  },
+  {
+    "purchase_id": "PUR-1005",
+    "status": "Processing",
+    "date": "May 04, 2026",
+    "customer": {
+      "full_name": "Hugo Alberto",
+      "phone": "956 908 1820",
+      "email": "hugo435@gmail.com",
+      "city": "Brownsville",
+      "address": "2100 Grapefruit st apt 902",
+      "payment_method": "Credit Card",
+      "card_name": "HugoCapital",
+      "username": "Hugo435"
+    },
+    "notes": "Gate Code 9012#",
+    "items": [
+      {
+        "id": 6,
+        "name": "Allergy Pills",
+        "price": 11.0,
+        "qty": 1,
+        "image": "Allergy Pills.jpg"
+      },
+      {
+        "id": 3,
+        "name": "Amoxicillin",
+        "price": 25.0,
+        "qty": 1,
+        "image": "Amoxicillin.png"
+      },
+      {
+        "id": 7,
+        "name": "Antibiotic Cream",
+        "price": 18.0,
+        "qty": 1,
+        "image": "Antibiotic Cream.jpg"
+      },
+      {
+        "id": 4,
+        "name": "Aspirin",
+        "price": 9.0,
+        "qty": 1,
+        "image": "Paracetamol.png"
+      }
+    ],
+    "summary": {
+      "subtotal": 63.0,
+      "tax": 4.41,
+      "total": 67.41
+    }
   }
 ]

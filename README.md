@@ -6,8 +6,7 @@ It includes:
 - customer shopping interfaces
 - cart and checkout flow
 - customer order history
-- employee inventory and order management
-- employee history and receipt generation
+- employee dashboard, sales, inventory, customer records, and employee records
 
 ## Project Files
 
@@ -61,17 +60,11 @@ It includes:
 - `employee_dashboard_ui.py`
   Main employee dashboard showing summary stats and recent customer orders.
 
-- `inventory_ui.py`
-  Employee inventory screen for checking stock, searching items, and updating inventory details.
-
-- `order_ui.py`
-  Employee stock-order screen for managing restock actions and viewing stock order details.
+- `inventory_hub_ui.py`
+  Employee inventory workspace for checking stock, restocking items, updating inventory details, and reviewing stock history.
 
 - `employees_ui.py`
   Employee management screen for viewing employee records, employee details, and staff-related actions.
-
-- `employee_history_ui.py`
-  Employee history screen for viewing customer orders, order details, and generating receipt or verification files.
 
 ### Saved Data Files
 

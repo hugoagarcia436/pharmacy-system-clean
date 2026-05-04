@@ -18,6 +18,7 @@ class CartUI(ctk.CTkFrame):
         self.controller.geometry("1350x850")
 
         self.quantity_labels = {}
+        self.item_total_labels = {}
         self.pending_quantities = {}
         self.cart_items = load_user_cart()
 
@@ -61,6 +62,7 @@ class CartUI(ctk.CTkFrame):
             .grid(row=0, column=0, sticky="w", padx=10, pady=10)
 
         self.quantity_labels = {}
+        self.item_total_labels = {}
         self.pending_quantities = {}
 
         if self.cart_items:
@@ -130,6 +132,13 @@ class CartUI(ctk.CTkFrame):
         ctk.CTkLabel(right, text=f"${item['price']:.2f}", font=("Arial", 16, "bold"))\
             .pack()
 
+        item_total = ctk.CTkLabel(
+            right,
+            text=f"Item total: ${item['price'] * item['qty']:.2f}",
+            text_color="gray",
+        )
+        item_total.pack(pady=(2, 0))
+
         qty = ctk.CTkFrame(right, fg_color="transparent")
         qty.pack(pady=5)
 
@@ -146,6 +155,7 @@ class CartUI(ctk.CTkFrame):
         qty_label = ctk.CTkLabel(qty, text=str(item["qty"]))
         qty_label.pack(side="left", padx=5)
         self.quantity_labels[item_id] = qty_label
+        self.item_total_labels[item_id] = item_total
 
         ctk.CTkButton(
             qty,
@@ -169,12 +179,23 @@ class CartUI(ctk.CTkFrame):
         ).pack(pady=2)
 
     def change_quantity(self, item_id, delta):
+        if item_id not in self.cart_items:
+            return
+
         current_qty = self.pending_quantities.get(item_id, 1)
         new_qty = max(1, current_qty + delta)
         self.pending_quantities[item_id] = new_qty
+        self.cart_items[item_id]["qty"] = new_qty
 
         if item_id in self.quantity_labels:
             self.quantity_labels[item_id].configure(text=str(new_qty))
+
+        if item_id in self.item_total_labels:
+            price = self.cart_items[item_id]["price"]
+            self.item_total_labels[item_id].configure(text=f"Item total: ${price * new_qty:.2f}")
+
+        self.write_cart_items()
+        self.update_summary()
 
     def save_quantity(self, item_id):
         if item_id not in self.cart_items:
@@ -191,6 +212,7 @@ class CartUI(ctk.CTkFrame):
         del self.cart_items[item_id]
         self.pending_quantities.pop(item_id, None)
         self.quantity_labels.pop(item_id, None)
+        self.item_total_labels.pop(item_id, None)
         self.write_cart_items()
         self.build_ui()
 
@@ -208,6 +230,7 @@ class CartUI(ctk.CTkFrame):
         self.total_label.configure(text=f"Total: ${total:.2f}")
 
     def open_checkout(self):
+        self.write_cart_items()
         self.controller.show_page("checkout")
 
     def open_dashboard(self):

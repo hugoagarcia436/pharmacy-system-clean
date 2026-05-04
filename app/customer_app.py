@@ -2,7 +2,13 @@ import customtkinter as ctk
 
 from auth.login_ui import LoginUI
 from auth.sign_up_ui import SignUpUI
-from app.staff_app import launch_staff_app
+from app.staff_app import (
+    CustomerRecordsUI,
+    EmployeeDashboard,
+    EmployeesUI,
+    InventoryHubUI,
+    ProcessSalesUI,
+)
 from catalog.category_ui import category_page
 from customer.cart_ui import CartUI
 from customer.checkout_ui import CheckoutUI
@@ -10,6 +16,7 @@ from customer.customer_account_ui import CustomerAccountUI
 from customer.customer_dashboard_ui import CustomerDashboard
 from customer.customer_orders_ui import CustomerOrdersUI
 from customer.customer_payment_methods_ui import CustomerPaymentMethodsUI
+from customer.customer_profile_ui import CustomerProfileUI
 from customer.customer_security_ui import CustomerSecurityUI
 
 
@@ -26,6 +33,7 @@ class CustomerApp(ctk.CTk):
             "customer_orders": CustomerOrdersUI,
             "customer_account": CustomerAccountUI,
             "customer_payments": CustomerPaymentMethodsUI,
+            "customer_profile": CustomerProfileUI,
             "customer_security": CustomerSecurityUI,
             "cart": CartUI,
             "checkout": CheckoutUI,
@@ -34,6 +42,12 @@ class CustomerApp(ctk.CTk):
             "personal": category_page("personal"),
             "firstaid": category_page("firstaid"),
             "travel": category_page("travel"),
+            "dashboard": EmployeeDashboard,
+            "sales": ProcessSalesUI,
+            "inventory": InventoryHubUI,
+            "inventory_hub": InventoryHubUI,
+            "customers": CustomerRecordsUI,
+            "employees": EmployeesUI,
         }
 
     def show_page(self, page_name):
@@ -53,10 +67,7 @@ class CustomerApp(ctk.CTk):
         self.current_page.grid(row=0, column=0, sticky="nsew")
 
     def open_staff_dashboard(self):
-        self.withdraw()
-        self.update_idletasks()
-        self.destroy()
-        launch_staff_app("dashboard")
+        self.show_page("dashboard")
 
 
 def launch_customer_app(start_page="login"):

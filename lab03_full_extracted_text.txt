@@ -1,0 +1,234 @@
+0002: Lab03.Concurrency and synchronization
+0004: Hugo Hernandez
+0005: CSCI 4334: Operating Systems
+0006: Wendy Aracely Sanchez Gomez
+0007: 05/03/2026
+0008: Backgroundandobjective
+0009: Slidessharedbytheinstructor.
+0010: https://www.youtube.com/playlist?list=PLfqABt5AS4FmuQf70psXrsMLEDQXNkLq2
+0011: Objective: To understand the lifecycle of POSIX threads and implement synchronization mechanisms, such as Mutexes and Semaphores, to manage shared memory and resolve concurrency conflicts (Race Conditions) in a Linux environment.
+0014: Lab procedure
+0016: PartI:ThreadFundamentalsand Lifecycle
+0017: Step1.OpenaterminalonLinux("Ctrl+Alt+T").
+0018: Step2.Creatingyourfirstthreadnao
+0019: Inthisstep,weintroducethePOSIXThreadslibrary.Creatingathreadisdifferentfromaregularfunction call. When you call a function normally, the program waits for it to finish. When you create a thread, the program starts the function in the background and immediately moves to the next line of code.
+0020: Openyourterminalandcreateanewfilenamedpthread01.cusingthenanoeditorby typing:
+0021: nanopthread01.cnanopthread01.c
+0023: Typeorpastethefollowingcodeintotheeditor:
+0024: #include<stdio.h>#include<pthread.h>//HeaderforPOSIXthreads//Thisisthefunctionthethreadwillexecute.//Itmustreturnvoid*andtakevoid*asanargument. void *work() {printf("Helloworld!\n"); return NULL;}intmain(intargc,char**argv){//DeclareavariabletoholdtheThreadID pthread_t thread1;/*Createthethreadusingpthread_create: Arguments:&thread1:Pointertothethreadidentifier.NULL:Threadattributes(NULLmeansdefaultattributes).work:Thenameofthefunctiontobeexecutedbythethread.NULL:Argumentspassedtothe'work'function(noneinthiscase).*/pthread_create(&thread1,NULL,work,NULL);//Theprogramreachesthispointimmediatelyafterstartingthethread.//Ifitexitshere,thenewthreadisdestroyedinstantly. return 0;#include<stdio.h>#include<pthread.h>//HeaderforPOSIXthreads//Thisisthefunctionthethreadwillexecute.//Itmustreturnvoid*andtakevoid*asanargument. void *work() {printf("Helloworld!\n"); return NULL;}intmain(intargc,char**argv){//DeclareavariabletoholdtheThreadID pthread_t thread1;/*Createthethreadusingpthread_create: Arguments:&thread1:Pointertothethreadidentifier.NULL:Threadattributes(NULLmeansdefaultattributes).work:Thenameofthefunctiontobeexecutedbythethread.NULL:Argumentspassedtothe'work'function(noneinthiscase).*/pthread_create(&thread1,NULL,work,NULL);//Theprogramreachesthispointimmediatelyafterstartingthethread.//Ifitexitshere,thenewthreadisdestroyedinstantly. return 0;
+0028: }}
+0031: SaveandExit nano:
+0032: PressCtrl +OthenEntertosave(WriteOut).
+0033: PressCtrl+Xtoexittheeditor.
+0036: Compilethecode:Tousethepthread.hlibrary,youmustlinkitduringcompilationwiththe- pthread (or -lpthread) flag:
+0037: gcc-pthreadpthread01.c-opthread01gcc-pthreadpthread01.c-opthread01
+0039: Runthe program:
+0040: ./pthread01./pthread01
+0044: Step3.Preventingprematureexitwithsleep
+0045: Inthepreviousstep,theprogramlikelyfinishedbeforethethreadhadachancetoexecute.Thisisbecause the main thread does not wait for other threads unless explicitly told to do so.
+0046: To fix this temporarily, we willuse the sleep() function (fromthe <unistd.h> library) to force themainthread to wait, giving our new thread enough time to print its message.
+0047: Modifythefileusingthefollowing code:
+0048: #include <stdio.h> #include<pthread.h>#include<unistd.h>//Essentiallibraryforthesleep()function//void*isthemandatoryreturntypeforthreadfunctionsinC. void *work() {printf("Helloworld!(fromthecreatedthread)\n"); return NULL;}intmain(intargc,char**argv){ pthread_t thread1;//Creatingthethread//ThemainprocesswillNOTwaitfor'work'unlessweforceit. pthread_create(&thread1, NULL, work, NULL);/*THEFIX:Weforcethemainthreadtopausefor5seconds.Thiskeepstheprocessalivelongenoughforthethread to reach the CPU and execute its printf statement.*/ sleep(5);printf("Mainthreadisnowexitingafterwaiting5s.\n"); return 0;}#include <stdio.h> #include<pthread.h>#include<unistd.h>//Essentiallibraryforthesleep()function//void*isthemandatoryreturntypeforthreadfunctionsinC. void *work() {printf("Helloworld!(fromthecreatedthread)\n"); return NULL;}intmain(intargc,char**argv){ pthread_t thread1;//Creatingthethread//ThemainprocesswillNOTwaitfor'work'unlessweforceit. pthread_create(&thread1, NULL, work, NULL);/*THEFIX:Weforcethemainthreadtopausefor5seconds.Thiskeepstheprocessalivelongenoughforthethread to reach the CPU and execute its printf statement.*/ sleep(5);printf("Mainthreadisnowexitingafterwaiting5s.\n"); return 0;}
+0050: What happened during those 5 seconds? The main thread is blocked (sleeping), but the process remainsalive, allowing the work thread to finish its task.
+0054: Question: Is sleeping for a fixed amount of time an efficient way to synchronize threads? What if the task takes 6 seconds? We will solve this in the next step.
+0057: Step4.ProperSynchronizationusingpthread_join
+0058: Usingsleep()inthemainthread(aswedidinStep3)isapoorsolutionbecausewedon'talwaysknowhow long a thread will take to finish.
+0059: The professional way to synchronize is using pthread_join. This function acts as a "waiting station": it blocks the main thread and prevents it from exiting until the specific thread (in this case, thread1) has finished its execution.
+0060: #include <stdio.h> #include<pthread.h> #include <unistd.h>void*work(){//Nowthethreadistheonethattakestimetofinish sleep(5);printf("Helloworld!\n"); return NULL;}intmain(intargc,char**argv){ pthread_t thread1;pthread_create(&thread1,NULL,work,NULL);/*THESOLUTION:pthread_joinThemainthreadwillstophereandwaitfor'thread1'toterminate. Arguments:thread1:TheIDofthethreadwearewaiting for.NULL:Apointertoreceivethereturnvalue(notusedhere).*/pthread_join(thread1,NULL);printf("Mainthreadexitingcleanlyafterthread1finished.\n"); return 0;}#include <stdio.h> #include<pthread.h> #include <unistd.h>void*work(){//Nowthethreadistheonethattakestimetofinish sleep(5);printf("Helloworld!\n"); return NULL;}intmain(intargc,char**argv){ pthread_t thread1;pthread_create(&thread1,NULL,work,NULL);/*THESOLUTION:pthread_joinThemainthreadwillstophereandwaitfor'thread1'toterminate. Arguments:thread1:TheIDofthethreadwearewaiting for.NULL:Apointertoreceivethereturnvalue(notusedhere).*/pthread_join(thread1,NULL);printf("Mainthreadexitingcleanlyafterthread1finished.\n"); return 0;}
+0062: Whatchanged?InStep3:Themainthreadwas"blindly"sleeping,hopingtheotherthreadwouldfinish.In Step 4: The main thread is now waiting specifically for thread1.
+0063: Even though work sleeps for 5 seconds, the program will exit immediately after the "Hello world!" is printed. This is efficient synchronization.
+0064: Notethatpthread_joinisthethreadequivalentofthewait()systemcallusedforprocesses(fork).
+0071: Step5.MonitoringThreadsintheOS
+0072: Nowthat we knowhowtosynchronizethreads, let'ssee howthe Operating System viewsthem. Although threadssharethesameProcessID(PID),eachthreadhasitsownThreadID(TID).Inthisstep,wewilluse the getpid() function to find the process ID and a Linux command to list the active threads.
+0073: UpdatethecodetoincludePIDreportingandalonger sleep:
+0077: #include <stdio.h> #include<pthread.h> #include <unistd.h>void*work(){//Weuse10secondstogiveyoutimetorunthe'ps'command sleep(10);printf("Helloworld!\n"); return NULL;}intmain(intargc,char**argv){ pthread_t thread1;intret;//getpid()returnstheIDassignedbytheOStothisprocess printf("Process ID: %d\n", getpid());printf("Beforecreationofthread\n");ret=pthread_create(&thread1,NULL,work,NULL); if (ret == 0)printf("Threadcreatedsuccessfully\n");elseprintf("Problemincreatingthread\n");pthread_join(thread1, NULL); printf("Threadterminated\n");return0;}#include <stdio.h> #include<pthread.h> #include <unistd.h>void*work(){//Weuse10secondstogiveyoutimetorunthe'ps'command sleep(10);printf("Helloworld!\n"); return NULL;}intmain(intargc,char**argv){ pthread_t thread1;intret;//getpid()returnstheIDassignedbytheOStothisprocess printf("Process ID: %d\n", getpid());printf("Beforecreationofthread\n");ret=pthread_create(&thread1,NULL,work,NULL); if (ret == 0)printf("Threadcreatedsuccessfully\n");elseprintf("Problemincreatingthread\n");pthread_join(thread1, NULL); printf("Threadterminated\n");return0;}
+0079: Whiletheprogramisrunningand"sleeping",quicklyopenasecondterminal(Ctrl+Alt+T).Look at the Process ID printed in your first terminal (e.g., Process ID: 3228). In the new terminal, run the following command (replace 3228 with your actual PID):
+0080: ps–T–p3228ps–T–p3228
+0082: Whattolookfor inthe output?
+0083: Inthesecondterminal,youshouldseetwoentriesunderthesamePID: themainthread(usuallyidentified by the same number as the PID) and the work thread (with a different TID).
+0084: Thisprovesthateventhoughitlookslikeoneprogram,theOSismanagingtwoseparateexecutionentities (LWP - Light Weight Processes) simultaneously.
+0087: Step6.ManagingMultipleThreads
+0088: One of the main advantages of threads is the ability to launch multiple tasks simultaneously. In this step, we will create two separate threads that execute the same work function.
+0089: Note that we now need two pthread_t variables and, most importantly, two pthread_join calls. The main thread will wait for thread1 to finish and then for thread2. If thread1 is already done when the first join finishes, the second join will return immediately.
+0090: Updatethecodetohandletwothreads:
+0091: #include<stdio.h>#include<stdio.h>
+0095: #include<pthread.h> #include <unistd.h>void*work(){//Boththreadswillsleepfor10seconds sleep(10);printf("Helloworld!\n"); return NULL;}intmain(intargc,char**argv){//Wedeclaretwothreadidentifiers pthread_t thread1, thread2;printf("ProcessID:%d\n",getpid());//Launchingboththreadsalmostsimultaneously pthread_create(&thread1, NULL, work, NULL); pthread_create(&thread2, NULL, work, NULL);//ThemainthreadwaitsforBOTHtofinish pthread_join(thread1, NULL); pthread_join(thread2, NULL);printf("Allthreadshaveterminated.Exiting.\n"); return 0;}#include<pthread.h> #include <unistd.h>void*work(){//Boththreadswillsleepfor10seconds sleep(10);printf("Helloworld!\n"); return NULL;}intmain(intargc,char**argv){//Wedeclaretwothreadidentifiers pthread_t thread1, thread2;printf("ProcessID:%d\n",getpid());//Launchingboththreadsalmostsimultaneously pthread_create(&thread1, NULL, work, NULL); pthread_create(&thread2, NULL, work, NULL);//ThemainthreadwaitsforBOTHtofinish pthread_join(thread1, NULL); pthread_join(thread2, NULL);printf("Allthreadshaveterminated.Exiting.\n"); return 0;}
+0097: While the program is running, go to your second terminal. Run the command again with the new PID:
+0098: ps-T-p [YOUR_NEW_PID]ps-T-p [YOUR_NEW_PID]
+0100: Whattolookfor inthe output?
+0101: Youshouldnowseethreerowsinthepscommandoutput:
+0102: Themainthread.
+0103: Thread1(Executingwork).
+0104: Thread2(Executingwork).
+0105: Both threads sleepfor 10seconds. Does the total execution time of the program become 20 seconds (10 + 10) or stay around 10 seconds?
+0108: Step7.ExecutingDifferentTasksSimultaneously
+0109: In a real-world application (like a web browser), one thread might be downloading a file while another is rendering the user interface. To simulate this, we will now assign a different function to each thread.
+0110: Although bothfunctions currentlyjustsleepandprint,theyrepresentindependenttasksthattheOperating System will manage in parallel.
+0111: Updatethecodewithtwodistinctfunctions:
+0112: //FunctionforThread1 void *work() {sleep(10);printf("Helloworld1!(TaskAfinished)\n"); return NULL;}//FunctionforThread2 void *work2() {sleep(10);printf("Helloworld2!(TaskBfinished)\n"); return NULL;}intmain(intargc,char**argv){ pthread_t thread1, thread2;printf("ProcessID:%d\n",getpid());// Launching thread1 to execute 'work' pthread_create(&thread1,NULL,work,NULL);// Launching thread2 to execute 'work2' pthread_create(&thread2,NULL,work2,NULL);//Waitforbothtocomplete pthread_join(thread1,NULL); pthread_join(thread2,NULL);printf("Bothdifferenttasksaredone.Exiting.\n"); return 0;}//FunctionforThread1 void *work() {sleep(10);printf("Helloworld1!(TaskAfinished)\n"); return NULL;}//FunctionforThread2 void *work2() {sleep(10);printf("Helloworld2!(TaskBfinished)\n"); return NULL;}intmain(intargc,char**argv){ pthread_t thread1, thread2;printf("ProcessID:%d\n",getpid());// Launching thread1 to execute 'work' pthread_create(&thread1,NULL,work,NULL);// Launching thread2 to execute 'work2' pthread_create(&thread2,NULL,work2,NULL);//Waitforbothtocomplete pthread_join(thread1,NULL); pthread_join(thread2,NULL);printf("Bothdifferenttasksaredone.Exiting.\n"); return 0;}#include <stdio.h> #include<pthread.h> #include <unistd.h>#include <stdio.h> #include<pthread.h> #include <unistd.h>
+0118: Does'Helloworld1'alwaysappearbefore'Helloworld2'?
+0119: Not necessarily. Since they run concurrently and have the same sleep time, the order depends on the OS Scheduler.
+0123: PartII:Threadsvs.Processes –MemoryArchitecture
+0124: Step8.Processesvs.Threads:Implementation
+0125: Nowthatyouknowhowtocreatethreads,wewillcomparethemwithprocesses.
+0126: Processes:Whenyouusefork(),theOScreatesanear-exactcopyoftheparentprocess.Theyhave separate memory spaces.
+0127: Threads:Whenyoucreatethreads,theyliveinsidethesameprocessandsharethesame memory.
+0128: In this step, we will write two separate small programs to observe these two different ways of achieving concurrency.
+0129: CreatetheProcess program:
+0130: nanoprocesses.cnanoprocesses.c#include<stdlib.h> #include<stdio.h> #include<unistd.h>#include<stdlib.h> #include<stdio.h> #include<unistd.h>
+0135: #include<sys/wait.h> #include<sys/types.h>intmain(intargc,char*argv[]){//fork()createsanewchildprocess int pid = fork();if(pid==-1)return1;//Bothparentandchildwillexecutethisline printf("Hello from processes\n");//Parentwaitsforthechildtofinish if(pid != 0) wait(NULL);return0;}#include<sys/wait.h> #include<sys/types.h>intmain(intargc,char*argv[]){//fork()createsanewchildprocess int pid = fork();if(pid==-1)return1;//Bothparentandchildwillexecutethisline printf("Hello from processes\n");//Parentwaitsforthechildtofinish if(pid != 0) wait(NULL);return0;}
+0137: CreatetheThreadprogram:
+0138: nanothreads.cnanothreads.c#include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<pthread.h>//Functionforthethreadstoexecute void* routine() {printf("Hellofromthreads\n"); return NULL;}intmain(intargc,char*argv[]){pthread_tt1,t2;//Creatingtwothreadswithinthesameprocess pthread_create(&t1, NULL, &routine, NULL); pthread_create(&t2, NULL, &routine, NULL);//Waitingforboththreads pthread_join(t1, NULL); pthread_join(t2, NULL);return0;}#include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<pthread.h>//Functionforthethreadstoexecute void* routine() {printf("Hellofromthreads\n"); return NULL;}intmain(intargc,char*argv[]){pthread_tt1,t2;//Creatingtwothreadswithinthesameprocess pthread_create(&t1, NULL, &routine, NULL); pthread_create(&t2, NULL, &routine, NULL);//Waitingforboththreads pthread_join(t1, NULL); pthread_join(t2, NULL);return0;}
+0141: Compileandrunboth:
+0142: gccprocesses.c-oprocesses./processesgccprocesses.c-oprocesses./processesgcc-pthreadthreads.c-othreads./threadsgcc-pthreadthreads.c-othreads./threads
+0145: Whatto observe?
+0146: TheProcessesprogramresultsin2messagestotal(ParentandChild).
+0147: TheThreadsprogramresultsin2messagestotal(Thread1andThread2).
+0151: Visually,they look similar,but inthe nextsteps, we will prove that Threads sharevariables while Processes do not.
+0152: fork() returns twice (once in the parent, once in the child), whereas pthread_create only starts a specificfunction in a new thread.
+0156: Step9.VerifyingProcessIDs(PIDs)
+0157: Thefunctiongetpid()returnstheuniqueidentifierthattheOperatingSystemassignstoaprocess.
+0158: IntheProcessprogram,fork()createsanewprocess,soweexpecttoseetwodifferent PIDs.
+0159: In the Thread program, hilos are just execution units within the same process, sowe expect to see the same PID for both.
+0162: ModifytheProcessprogram:
+0163: #include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<sys/wait.h> #include<sys/types.h>intmain(intargc,char*argv[]){intpid= fork();if(pid==-1)return1;//PrintingthePIDofthecurrentexecutionflow printf("Process PID: %d\n", getpid());if(pid!=0)wait(NULL); return 0;}#include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<sys/wait.h> #include<sys/types.h>intmain(intargc,char*argv[]){intpid= fork();if(pid==-1)return1;//PrintingthePIDofthecurrentexecutionflow printf("Process PID: %d\n", getpid());if(pid!=0)wait(NULL); return 0;}
+0165: ModifytheThread program:
+0166: #include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<pthread.h>void*routine(){//PrintingthePIDoftheprocessthatownsthisthread printf("Thread belonging to PID: %d\n", getpid()); return NULL;}intmain(intargc,char*argv[]){pthread_tt1,t2;//Boththreadswillexecutethesame'routine' pthread_create(&t1, NULL, &routine, NULL); pthread_create(&t2, NULL, &routine, NULL);pthread_join(t1,NULL); pthread_join(t2,NULL);#include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<pthread.h>void*routine(){//PrintingthePIDoftheprocessthatownsthisthread printf("Thread belonging to PID: %d\n", getpid()); return NULL;}intmain(intargc,char*argv[]){pthread_tt1,t2;//Boththreadswillexecutethesame'routine' pthread_create(&t1, NULL, &routine, NULL); pthread_create(&t2, NULL, &routine, NULL);pthread_join(t1,NULL); pthread_join(t2,NULL);
+0170: return0;}return0;}
+0172: EventhoughthreadssharethesamePID,theOSstilldistinguishestheminternallywithaTID(ThreadID), as they saw in Step 5 with the ps command.
+0175: Step10.MemoryIsolationin Processes
+0176: When a process is forked, the Operating System creates a copy of the parent's memory for the child. This means that variables like x are no longer shared; each process has its own private version of x.
+0177: In this step, we will increment x only in the child process (pid == 0). If memory were shared, both would see the change. If it is isolated, only the child will show the incremented value.
+0178: ModifytheProcessprogram:
+0179: #include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<sys/wait.h> #include<sys/types.h>intmain(intargc,char*argv[]){intx=2;//Localvariable int pid = fork();if(pid==-1)return1;//Onlythechildprocessincrementsx if (pid == 0) {x++;printf("Childisincrementingx...\n");}//Wesleepfor2secondstoensurebothprocessesexistatthesametime sleep(2);printf("Processid:%d|Valueofx:%d\n",getpid(),x);//Parentwaitsforchild if(pid!=0) wait(NULL);return0;}#include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<sys/wait.h> #include<sys/types.h>intmain(intargc,char*argv[]){intx=2;//Localvariable int pid = fork();if(pid==-1)return1;//Onlythechildprocessincrementsx if (pid == 0) {x++;printf("Childisincrementingx...\n");}//Wesleepfor2secondstoensurebothprocessesexistatthesametime sleep(2);printf("Processid:%d|Valueofx:%d\n",getpid(),x);//Parentwaitsforchild if(pid!=0) wait(NULL);return0;}
+0181: What happened?
+0182: Even though x was 2 for both at the start, once the fork() happened, they became two separate "worlds". The child (PID 5002) sees x = 3. The parent (PID 5001) still sees x = 2.
+0183: Processesdonotsharememory.Changingavariableinonedoesnotaffectthe other.
+0196: Step11.GlobalVariablesinProcesses
+0200: Does moving the variable outside of main make it shared between processes? No. When fork() is called, the entire address space is duplicated. This includes: the Stack (local variables), the Heap (dynamic memory), and the Static/Data segment (global variables).
+0201: Eachprocessstillgetsitsownindependentcopyoftheglobalvariablex.
+0202: Modifythe code:
+0203: #include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<sys/wait.h> #include<sys/types.h>//xisnowaGLOBALvariable int x = 2;intmain(intargc,char*argv[]){intpid= fork();if(pid==-1)return1;//Incrementonlyinthechildprocess if (pid == 0) {x++;}sleep(2);//Eachprocesswillprintitsownversionoftheglobal'x' printf("Process id: %d | Global x: %d\n", getpid(), x);if(pid!=0)wait(NULL); return 0;}#include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<sys/wait.h> #include<sys/types.h>//xisnowaGLOBALvariable int x = 2;intmain(intargc,char*argv[]){intpid= fork();if(pid==-1)return1;//Incrementonlyinthechildprocess if (pid == 0) {x++;}sleep(2);//Eachprocesswillprintitsownversionoftheglobal'x' printf("Process id: %d | Global x: %d\n", getpid(), x);if(pid!=0)wait(NULL); return 0;}
+0205: Eventhoughxisglobal,theoutputisidenticaltoStep10.
+0206: TheReason,afork()createsacompleteclone.Thechildprocesshasitsownglobal xat thesamememory address as the parent, but in a different physical RAM location. Global variables do not facilitate communication between processes.
+0207: Processes are like two different computers. Now let's see how threads behave; they are like two people sharing the same desk.
+0210: Step12.SharedMemoryinThreads
+0211: Unlike processes, threads live within the same address space. This means they share the same global variables.Inthiscode,Thread1executesroutine()andincrementstheglobalvariablex.Thread2executes routine2(),whichonlyprintsthevalueofx.Becausetheysharememory,Thread2willseethemodification made by Thread 1.
+0212: Modifyyourthread program:
+0213: #include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<pthread.h>#include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<pthread.h>
+0217: //Globalvariablesharedbyallthreadsinthisprocess int x = 2;void*routine(){x++;//Incrementingthesharedvariable sleep(2);printf("Thread1(routine)seesxas:%d\n",x); return NULL;}void*routine2(){//Thisthreaddoesnotincrementx,butitwillseethechange sleep(2);printf("Thread2(routine2)seesxas:%d\n",x); return NULL;}intmain(intargc,char*argv[]){pthread_tt1,t2;//Creatingtwothreadsthatsharethesamememoryspace pthread_create(&t1, NULL, &routine, NULL); pthread_create(&t2, NULL, &routine2, NULL);pthread_join(t1,NULL); pthread_join(t2,NULL);return0;}//Globalvariablesharedbyallthreadsinthisprocess int x = 2;void*routine(){x++;//Incrementingthesharedvariable sleep(2);printf("Thread1(routine)seesxas:%d\n",x); return NULL;}void*routine2(){//Thisthreaddoesnotincrementx,butitwillseethechange sleep(2);printf("Thread2(routine2)seesxas:%d\n",x); return NULL;}intmain(intargc,char*argv[]){pthread_tt1,t2;//Creatingtwothreadsthatsharethesamememoryspace pthread_create(&t1, NULL, &routine, NULL); pthread_create(&t2, NULL, &routine2, NULL);pthread_join(t1,NULL); pthread_join(t2,NULL);return0;}
+0219: Thereisonlyonexintheentireprocess.Itisinthesharedspace.Whenroutineexecutesx++,itismodifying the exact same memory location that routine2 reads.
+0220: Threads are much more efficient for sharing data than processes, but this also makes them dangerous. If two threads try to change x at the same time, you get a Race Condition.
+0221: Inprocesses:ifchildchangedx,parentdidn'tseeit.
+0222: Inthreads:ifthread1changedx,thread2didseeit.
+0224: PartIII:Criticalsectionandrace condition
+0225: Step13.Basicsharedcounter
+0226: Followingthelogic from Step 12,wearenowusing aspecific variable name mailsandboththreadswill execute the same routine. In this step, each thread increments the counter only once.
+0228: Modifyyour code:
+0229: #include <stdlib.h> #include <stdio.h> #include<pthread.h>//Globalvariablesharedbyboththreads int mails = 0;void*routine(){//Eachthreadtriestoincrementthecounter1,000,000times for (int i = 0; i < 1000000; i++) {mails++;}#include <stdlib.h> #include <stdio.h> #include<pthread.h>//Globalvariablesharedbyboththreads int mails = 0;void*routine(){//Eachthreadtriestoincrementthecounter1,000,000times for (int i = 0; i < 1000000; i++) {mails++;}
+0233: returnNULL;}intmain(intargc,char*argv[]){ pthread_t t1, t2;//Launchingbothcounterthreadsif(pthread_create(&t1,NULL,&routine,NULL)!=0)return1; if(pthread_create(&t2,NULL,&routine,NULL)!=0)return2;//Waitingforthemtofinishif(pthread_join(t1,NULL)!=0)return3; if(pthread_join(t2,NULL)!=0)return 4;//TheresultwilllikelybeLESSthan2,000,000 printf("Number of emails: %d\n", mails);return0;}returnNULL;}intmain(intargc,char*argv[]){ pthread_t t1, t2;//Launchingbothcounterthreadsif(pthread_create(&t1,NULL,&routine,NULL)!=0)return1; if(pthread_create(&t2,NULL,&routine,NULL)!=0)return2;//Waitingforthemtofinishif(pthread_join(t1,NULL)!=0)return3; if(pthread_join(t2,NULL)!=0)return 4;//TheresultwilllikelybeLESSthan2,000,000 printf("Number of emails: %d\n", mails);return0;}
+0235: Everythingworksasexpected.
+0236: Step14.Incrementingwithasmall loop.
+0237: Now, we add a small loop of 100 iterations to each thread. We want to see if the counter can handle a bit more work.
+0239: Modifyyour code:
+0240: #include <stdlib.h> #include <stdio.h> #include<pthread.h>intmails=0;void*routine(){for(inti=0;i<100;i++){ mails++;}returnNULL;}intmain(intargc,char*argv[]){ pthread_t t1, t2;pthread_create(&t1,NULL,&routine,NULL); pthread_create(&t2,NULL,&routine,NULL); pthread_join(t1, NULL);pthread_join(t2,NULL);printf("Numberofemails:%d\n",mails); return 0;}#include <stdlib.h> #include <stdio.h> #include<pthread.h>intmails=0;void*routine(){for(inti=0;i<100;i++){ mails++;}returnNULL;}intmain(intargc,char*argv[]){ pthread_t t1, t2;pthread_create(&t1,NULL,&routine,NULL); pthread_create(&t2,NULL,&routine,NULL); pthread_join(t1, NULL);pthread_join(t2,NULL);printf("Numberofemails:%d\n",mails); return 0;}
+0242: Withonly100iterations,theCPUusuallyfinishesonethreadbeforetheotherevenstarts,sotheresultoften remains correct.
+0244: Step15.TheRaceCondition(1,000,000iterations)
+0245: Whathappensifweincreasetheworkloadto1,000,000iterations?Now,boththreadswillberunningfora longer time, and the Operating System will be forced to switch between them constantly.
+0249: Modifyyour code:
+0250: #include <stdlib.h> #include <stdio.h> #include<pthread.h>intmails=0;void*routine(){for(inti=0;i<1000000;i++){ mails++;}returnNULL;}intmain(intargc,char*argv[]){ pthread_t t1, t2;pthread_create(&t1,NULL,&routine,NULL); pthread_create(&t2,NULL,&routine,NULL); pthread_join(t1, NULL);pthread_join(t2,NULL);printf("Numberofemails:%d\n",mails); return 0;}#include <stdlib.h> #include <stdio.h> #include<pthread.h>intmails=0;void*routine(){for(inti=0;i<1000000;i++){ mails++;}returnNULL;}intmain(intargc,char*argv[]){ pthread_t t1, t2;pthread_create(&t1,NULL,&routine,NULL); pthread_create(&t2,NULL,&routine,NULL); pthread_join(t1, NULL);pthread_join(t2,NULL);printf("Numberofemails:%d\n",mails); return 0;}
+0252: Theresultchanges in every execution because of a race condition. The mails++operation is not atomic; it requires three CPU steps.
+0253: Read:LoadthevalueofmailsfromRAMtoaregister.
+0254: Increment:Add1totheregister value.
+0255: Write:SavethenewvaluebacktoRAM.
+0256: When thread A is at the "Increment" step, the OS might pause it and let thread B "Read" the old value. Whenboththreads"Write"backtomemory,theystorethesamevalue,andoneincrementislost.Thefinal number is random because it depends on exactly when the OS decides to switch between threads.
+0260: PartIV:Threadsynchronizationandmutex
+0261: Step16.Solvingtheraceconditionwith mutex
+0262: To fix the inconsistent results from Step 15, we must ensure that only one thread can access the "Critical Section" (the mails++line) at a time. We do this using a Mutex (short for Mutual Exclusion).
+0263: AMutexactslikealock.Whenathreadcallspthread_mutex_lock,it"takesthekey."Ifanotherthread triestolock the same mutex, it must wait until the first thread calls pthread_mutex_unlockto release the key. This ensures the mails++operation is performed safely.
+0264: Updateyourcodein threads.c:
+0265: #include <stdlib.h> #include <stdio.h> #include <unistd.h> #include<pthread.h>intmails=0;//1.Declarethemutex#include <stdlib.h> #include <stdio.h> #include <unistd.h> #include<pthread.h>intmails=0;//1.Declarethemutex
+0269: pthread_mutex_tmutex;void*routine(){for(inti=0;i<1000000;i++){//3.Lockbeforeenteringthecriticalsection pthread_mutex_lock(&mutex);mails++;//4.Unlockafterleavingthecriticalsection pthread_mutex_unlock(&mutex);}returnNULL;}intmain(intargc,char*argv[]){ pthread_t t1, t2;// 2. Initialize the mutex pthread_mutex_init(&mutex,NULL);if(pthread_create(&t1,NULL,&routine,NULL)!=0)return1; if(pthread_create(&t2,NULL,&routine,NULL)!=0)return2;if(pthread_join(t1,NULL)!=0)return3; if(pthread_join(t2,NULL)!=0)return 4;// 5. Clean up the mutex pthread_mutex_destroy(&mutex);//TheresultwillnowALWAYSbe2,000,000 printf("Number of mails: %d\n", mails);return0;}pthread_mutex_tmutex;void*routine(){for(inti=0;i<1000000;i++){//3.Lockbeforeenteringthecriticalsection pthread_mutex_lock(&mutex);mails++;//4.Unlockafterleavingthecriticalsection pthread_mutex_unlock(&mutex);}returnNULL;}intmain(intargc,char*argv[]){ pthread_t t1, t2;// 2. Initialize the mutex pthread_mutex_init(&mutex,NULL);if(pthread_create(&t1,NULL,&routine,NULL)!=0)return1; if(pthread_create(&t2,NULL,&routine,NULL)!=0)return2;if(pthread_join(t1,NULL)!=0)return3; if(pthread_join(t2,NULL)!=0)return 4;// 5. Clean up the mutex pthread_mutex_destroy(&mutex);//TheresultwillnowALWAYSbe2,000,000 printf("Number of mails: %d\n", mails);return0;}
+0271: Nomatterhowmanytimesyourunit,theresultwillalwaysbeexactly2,000,000.
+0272: By locking the mutex, we make the three steps of mails++ (Read, Increment, Write) appear as one single, unbreakable (atomic) operation to other threads.
+0273: YoumightnoticethattheprogramtakesslightlylongertofinishthaninStep15.Thisisbecausethethreads are now waiting for each other instead of running blindly.
+0276: Step17.ScalingtoMultiple Threads
+0277: The power of synchronization with Mutex is that it scales. In this step, we increase the number of threads from 2 to 4. Without a mutex, having 4 threads would make the "Race Condition" even more aggressive and the error in the final count would be much larger.
+0278: However,withourpthread_mutex_lockandpthread_mutex_unlockinplace,eachthreadwillpatientlywait for its turn to increment the counter, ensuring that the final result is exactly 4,000,000.
+0279: Updateyourcodeinthreads.c:
+0280: #include <stdlib.h> #include <stdio.h> #include <unistd.h> #include<pthread.h>int mails = 0; pthread_mutex_tmutex;void*routine(){#include <stdlib.h> #include <stdio.h> #include <unistd.h> #include<pthread.h>int mails = 0; pthread_mutex_tmutex;void*routine(){
+0284: for(inti=0;i<1000000;i++){ pthread_mutex_lock(&mutex); mails++; pthread_mutex_unlock(&mutex);}returnNULL;}intmain(intargc,char*argv[]){//Wenowdeclarefourthreadidentifiers pthread_t t1, t2, t3, t4;pthread_mutex_init(&mutex,NULL);//Creating4threadsexecutingthesameroutine pthread_create(&t1, NULL, &routine, NULL); pthread_create(&t2, NULL, &routine, NULL); pthread_create(&t3, NULL, &routine, NULL); pthread_create(&t4, NULL, &routine, NULL);//Wemustjoineverysinglethreadtowaitforthecompleteresult pthread_join(t1, NULL);pthread_join(t2,NULL); pthread_join(t3,NULL); pthread_join(t4,NULL);pthread_mutex_destroy(&mutex);//Theresultshouldbeexactly4,000,000 printf("Number of mails: %d\n", mails);return0;}for(inti=0;i<1000000;i++){ pthread_mutex_lock(&mutex); mails++; pthread_mutex_unlock(&mutex);}returnNULL;}intmain(intargc,char*argv[]){//Wenowdeclarefourthreadidentifiers pthread_t t1, t2, t3, t4;pthread_mutex_init(&mutex,NULL);//Creating4threadsexecutingthesameroutine pthread_create(&t1, NULL, &routine, NULL); pthread_create(&t2, NULL, &routine, NULL); pthread_create(&t3, NULL, &routine, NULL); pthread_create(&t4, NULL, &routine, NULL);//Wemustjoineverysinglethreadtowaitforthecompleteresult pthread_join(t1, NULL);pthread_join(t2,NULL); pthread_join(t3,NULL); pthread_join(t4,NULL);pthread_mutex_destroy(&mutex);//Theresultshouldbeexactly4,000,000 printf("Number of mails: %d\n", mails);return0;}
+0286: Observations:
+0287: Scalability: The logic of the program remains the same regardless of the number of threads. The mutex successfully serializes the access to the mails variable.
+0288: Performance:observeiftheprogramtakeslongertorunnow.With4threadsallfightingforthesamelock, thereismore"contention,"whichcanslowdowntheexecutioncomparedtoasingle-threadedversion,even though we are using more "cores." More threads don't always mean more speed if the synchronization overhead is high.
+0291: Step18.Verification:RemovingtheLock
+0292: To prove that the mutex was indeed the hero in the previous step, we will now perform a "stress test." By commenting out the lock and unlock commands, we allow all 4 threads to access and modify the mails variable simultaneously without any restrictions.
+0293: With 4 threads running 1,000,000 iterations each, the "Race Condition" will be much more severe than it was with only 2 threads.
+0294: #include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<pthread.h>int mails = 0; pthread_mutex_tmutex;#include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<pthread.h>int mails = 0; pthread_mutex_tmutex;
+0298: void*routine(){for(inti=0;i<1000000;i++){//Wecommenttheprotectiontoobservethefailure//pthread_mutex_lock(&mutex); mails++;// pthread_mutex_unlock(&mutex);}returnNULL;}intmain(intargc,char*argv[]){pthread_t t1, t2, t3, t4; pthread_mutex_init(&mutex,NULL);pthread_create(&t1,NULL,&routine,NULL); pthread_create(&t2,NULL,&routine,NULL); pthread_create(&t3,NULL,&routine,NULL); pthread_create(&t4,NULL,&routine,NULL);pthread_join(t1,NULL); pthread_join(t2,NULL); pthread_join(t3,NULL); pthread_join(t4,NULL);pthread_mutex_destroy(&mutex);//Watchthechaos!printf("Numberofmails:%d\n",mails);return0;}void*routine(){for(inti=0;i<1000000;i++){//Wecommenttheprotectiontoobservethefailure//pthread_mutex_lock(&mutex); mails++;// pthread_mutex_unlock(&mutex);}returnNULL;}intmain(intargc,char*argv[]){pthread_t t1, t2, t3, t4; pthread_mutex_init(&mutex,NULL);pthread_create(&t1,NULL,&routine,NULL); pthread_create(&t2,NULL,&routine,NULL); pthread_create(&t3,NULL,&routine,NULL); pthread_create(&t4,NULL,&routine,NULL);pthread_join(t1,NULL); pthread_join(t2,NULL); pthread_join(t3,NULL); pthread_join(t4,NULL);pthread_mutex_destroy(&mutex);//Watchthechaos!printf("Numberofmails:%d\n",mails);return0;}
+0300: Thenumberwillbesignificantlylowerthan4,000,000andwillchangedrasticallyeverytimeyourun it.
+0301: With 4 threads and no mutex, the corruption of the data is much more evident. The probability of two or more threads reading the same value at the same time increases with every added thread.
+0302: Performance vs. Correctness: You might notice the program runs much faster now. However, the result is wrong.Thisisthefundamentaltrade-offinconcurrentprogramming:speedisuselesswithoutdataintegrity.
+0304: PartV:SemaphoresandResourceManagement
+0305: Step19.IntroductiontoPOSIXSemaphores
+0306: Asemaphore(sem_t)isasynchronizationobjectthatmaintainsacounter.
+0307: sem_init:Initializesthesemaphore.Thethirdargument(1inthiscase)istheinitial value.
+0308: sem_wait:Decrementsthecounter.Ifthecounteris0,thethreadwaits.
+0309: sem_post:Incrementsthecounter,allowinganotherthreadtoenter.
+0310: Inthisinitialcode,wecreate 4threadsusingaloop.WealsopassauniqueIDtoeachthreadbyallocating memorywithmalloc.Notethatinthisspecificstep,weareinitializingthesemaphorebut notyetusingit to block anything; we are just setting up the structure.
+0311: Createthefilesemaphores.c:
+0312: nanosemaphores.cnanosemaphores.c
+0317: #include <stdlib.h> #include <stdio.h> #include <unistd.h> #include <pthread.h> #include <string.h> #include<semaphore.h>#defineTHREAD_NUM4//Declarethesemaphore sem_t semaphore;void*routine(void*args){// We cast the argument back to int and print it printf("Hello from thread %d\n", *(int*)args); free(args);//Cleanupthememoryallocatedinmain return NULL;}intmain(intargc,char*argv[]){ pthread_t th[THREAD_NUM];//Initializesemaphore:(address,pshared,initial_value)//pshared=0meansit'ssharedbetweenthreads,notprocesses. sem_init(&semaphore, 0, 1);inti;for(i=0;i<THREAD_NUM;i++){int*a= malloc(sizeof(int));*a=i;if(pthread_create(&th[i],NULL,&routine,a)!=0){ perror("Failed to create thread");}}for(i=0;i<THREAD_NUM;i++){if(pthread_join(th[i],NULL)!=0){ perror("Failed to join thread");}}// Clean up sem_destroy(&semaphore);return0;}#include <stdlib.h> #include <stdio.h> #include <unistd.h> #include <pthread.h> #include <string.h> #include<semaphore.h>#defineTHREAD_NUM4//Declarethesemaphore sem_t semaphore;void*routine(void*args){// We cast the argument back to int and print it printf("Hello from thread %d\n", *(int*)args); free(args);//Cleanupthememoryallocatedinmain return NULL;}intmain(intargc,char*argv[]){ pthread_t th[THREAD_NUM];//Initializesemaphore:(address,pshared,initial_value)//pshared=0meansit'ssharedbetweenthreads,notprocesses. sem_init(&semaphore, 0, 1);inti;for(i=0;i<THREAD_NUM;i++){int*a= malloc(sizeof(int));*a=i;if(pthread_create(&th[i],NULL,&routine,a)!=0){ perror("Failed to create thread");}}for(i=0;i<THREAD_NUM;i++){if(pthread_join(th[i],NULL)!=0){ perror("Failed to join thread");}}// Clean up sem_destroy(&semaphore);return0;}
+0319: malloc in threads: Since the loop moves very fast, if we passed the address of i directly (&i), all threads might end up seeing the same final value of i. We use malloc to give each thread its own "copy" of its ID.
+0320: SemaphoreValue:Rightnow,thesemaphorehasavalueof1,actinglikeaMutex,butwehaven't called sem_wait yet, so the threads are printing freely.
+0323: Step 20. Add the sem_wait and sem_post commands to see the difference. Note that the semaphore has a value of 1 set up in sem_init command. Compile and run it.
+0324: #include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<pthread.h> #include<string.h>#include<stdlib.h> #include<stdio.h> #include<unistd.h> #include<pthread.h> #include<string.h>
+0328: #include<semaphore.h> #define THREAD_NUM 4 sem_t semaphore;void*routine(void*args){sem_wait(&semaphore); sleep(1);printf("Hellofromthread%d\n",*(int*)args); sem_post(&semaphore);free(args);}intmain(intargc,char*argv[]){pthread_t th[THREAD_NUM]; sem_init(&semaphore,0,1);for(inti=0;i<THREAD_NUM; i++){int*a= malloc(sizeof(int));*a=i;if(pthread_create(&th[i],NULL,&routine,a)!=0) perror("Fail to create thread");}for(i=0;i<THREAD_NUM; i++){if(pthread_join(th[i], NULL) !=0) perror("Failtojointhread");}sem_destroy(&semaphore); return 0;}#include<semaphore.h> #define THREAD_NUM 4 sem_t semaphore;void*routine(void*args){sem_wait(&semaphore); sleep(1);printf("Hellofromthread%d\n",*(int*)args); sem_post(&semaphore);free(args);}intmain(intargc,char*argv[]){pthread_t th[THREAD_NUM]; sem_init(&semaphore,0,1);for(inti=0;i<THREAD_NUM; i++){int*a= malloc(sizeof(int));*a=i;if(pthread_create(&th[i],NULL,&routine,a)!=0) perror("Fail to create thread");}for(i=0;i<THREAD_NUM; i++){if(pthread_join(th[i], NULL) !=0) perror("Failtojointhread");}sem_destroy(&semaphore); return 0;}
+0330: In computer science theory, semaphore operations are traditionally known by the letters P and V, terms originallyintroducedbyEdsgerDijkstra.InmodernCprogrammingusingthesemaphore.hlibrary,these operations map directly to sem_waitand sem_post:
+0335: Step21.Implementingsem_waitandsem_post.
+0336: Nowwearegoingtorestrictaccesstotheprintfstatementusingthe semaphore.
+0340: sem_wait(&semaphore): This checks the semaphore's value. Since it is 1, thefirstthread to arrive decrements it to 0 and proceeds.
+0341: The"Wait":Whentheother3threadsarrive,theyfindthevalueat0andmustwait(block)untilit becomes greater than 0 again.
+0342: sem_post(&semaphore):Whenathreadfinishes,itincrementsthevaluebackto1,"wakingup"the next thread in line.
+0343: Because of the sleep(1), this program will take exactly4 seconds to finish, asthreads areforced to go one by one.
+0344: Modifysemaphores.c:
+0345: #include <stdlib.h> #include <stdio.h> #include <unistd.h> #include <pthread.h> #include <string.h> #include<semaphore.h>#defineTHREAD_NUM4 sem_t semaphore;void*routine(void*args){//1.Wait/Lock:Decreasethesemaphorevalue sem_wait(&semaphore);sleep(1);//Forceadelaytoseetheserialization printf("Hello from thread %d\n", *(int*)args);//2.Post/Unlock:Increasethesemaphorevalue sem_post(&semaphore);free(args); returnNULL;}intmain(intargc,char*argv[]){ pthread_t th[THREAD_NUM];// Initial value is 1 sem_init(&semaphore,0,1);inti;for(i=0;i<THREAD_NUM;i++){int*a= malloc(sizeof(int));*a=i;if(pthread_create(&th[i],NULL,&routine,a)!=0){ perror("Failed to create thread");}}for(i=0;i<THREAD_NUM;i++){if(pthread_join(th[i],NULL)!=0){ perror("Failed to join thread");}}sem_destroy(&semaphore); return 0;}#include <stdlib.h> #include <stdio.h> #include <unistd.h> #include <pthread.h> #include <string.h> #include<semaphore.h>#defineTHREAD_NUM4 sem_t semaphore;void*routine(void*args){//1.Wait/Lock:Decreasethesemaphorevalue sem_wait(&semaphore);sleep(1);//Forceadelaytoseetheserialization printf("Hello from thread %d\n", *(int*)args);//2.Post/Unlock:Increasethesemaphorevalue sem_post(&semaphore);free(args); returnNULL;}intmain(intargc,char*argv[]){ pthread_t th[THREAD_NUM];// Initial value is 1 sem_init(&semaphore,0,1);inti;for(i=0;i<THREAD_NUM;i++){int*a= malloc(sizeof(int));*a=i;if(pthread_create(&th[i],NULL,&routine,a)!=0){ perror("Failed to create thread");}}for(i=0;i<THREAD_NUM;i++){if(pthread_join(th[i],NULL)!=0){ perror("Failed to join thread");}}sem_destroy(&semaphore); return 0;}
+0347: Eventhough4threadswerecreatedalmostatthesametime,thesemaphorewithvalue1actedasa "bottleneck."
+0351: ComparisonwithMutex: Inthisspecificconfiguration(value=1),thesemaphoreisfunctionallyidentical to a Mutex. It provides Mutual Exclusion.
+0352: Whatwouldhappenifwechangedtheinitialvalueofthesemaphoreto2or3?
+0355: Step22.MultipleAccesswithCountingSemaphores
+0356: The real difference between a Mutex and a Semaphore is that a Semaphore can allow multiple threads to access a resource at the same time.
+0357: By changing the initial value to 3 in sem_init(&semaphore, 0, 3), you are saying: "There are 3 available slots/permits."
+0358: Thefirst3threadstocallsem_waitwillpassimmediately.
+0359: #include <stdlib.h> #include <stdio.h> #include <unistd.h> #include <pthread.h> #include <string.h> #include<semaphore.h>#defineTHREAD_NUM4 sem_t semaphore;void*routine(void*args){ sem_wait(&semaphore);//Nowmultiplethreadscanbehereatthesametime! sleep(1);printf("Hellofromthread%d\n",*(int*)args); sem_post(&semaphore);free(args); returnNULL;}intmain(intargc,char*argv[]){ pthread_t th[THREAD_NUM];//CHANGE:Initialvaluesetto3 sem_init(&semaphore, 0, 3);inti;for(i=0;i<THREAD_NUM;i++){int*a= malloc(sizeof(int));*a=i;if(pthread_create(&th[i],NULL,&routine,a)!=0){ perror("Failed to create thread");}}for(i=0;i<THREAD_NUM;i++){if(pthread_join(th[i],NULL)!=0){ perror("Failed to join thread");}}sem_destroy(&semaphore); return 0;}#include <stdlib.h> #include <stdio.h> #include <unistd.h> #include <pthread.h> #include <string.h> #include<semaphore.h>#defineTHREAD_NUM4 sem_t semaphore;void*routine(void*args){ sem_wait(&semaphore);//Nowmultiplethreadscanbehereatthesametime! sleep(1);printf("Hellofromthread%d\n",*(int*)args); sem_post(&semaphore);free(args); returnNULL;}intmain(intargc,char*argv[]){ pthread_t th[THREAD_NUM];//CHANGE:Initialvaluesetto3 sem_init(&semaphore, 0, 3);inti;for(i=0;i<THREAD_NUM;i++){int*a= malloc(sizeof(int));*a=i;if(pthread_create(&th[i],NULL,&routine,a)!=0){ perror("Failed to create thread");}}for(i=0;i<THREAD_NUM;i++){if(pthread_join(th[i],NULL)!=0){ perror("Failed to join thread");}}sem_destroy(&semaphore); return 0;}The4ththreadwillbeblockedandmustwaituntiloneofthefirstthreecallssem_post. Modify semaphores.c and change the initial value:
+0363: Whythis happens:
+0364: Groupof3:Thefirstthreemessagesappearatthesametimebecausethesemaphorehad3permits.
+0365: The last one: The 4th thread had to wait for one of the others to finish (sem_post) before it could print its message.
+0366: While a Mutex is like a bathroom key (only one person at a time), a Semaphore is like a restaurant with 3 tables.
+0369: Questions
+0370: PartI:TheBasics(Steps1-12)
+0371: MemoryManagement: Explainthefundamental differencebetweenhowprocessesandthreadsmanage memory. Why is it "easier" but "riskier" for threads to communicate?
+0372: Thread Lifecycle: What are the specific roles of pthread_create and pthread_join? What happens to the main program if pthread_join is omitted?
+0375: PartII:TheConflict(Steps13-15)
+0376: TheRaceCondition:DefineRaceConditionbasedonyourobservationsinStep15.Whydidthecounter fail to reach 2,000,000?
+0377: AtomicOperations:IstheCoperationmails++atomic?ExplainthethreestepstheCPUperforms"under the hood" (Read-Modify-Write) and why this matters in multi-threading.
+0378: Critical Section: Writeaformal definition of a Critical Section. Identify exactlywhichline of code was the Critical Section in Step 15.
+0381: PartIII:MutexSynchronization(Steps16- 18)
+0382: MutualExclusion:Whatdoes"Mutex"standfor?Explainhowpthread_mutex_lockandunlockprevent data corruption.
+0383: Performance Trade-off: In Step 18, you removed the mutex and the code ran faster but gave the wrong result. Explain the trade-off between execution speed and data integrity.
+0385: PartIV:Memory&Arguments(Step19)
+0386: PointerCasting:Inthecommand*(int*)args,explainwhateachpartdoes:Whatisargs,whydowecast it to (int*), and what does the first * do?
+0387: Dynamic Allocation: Why did we use malloc to pass the ID to each thread instead of just passing the address of the loop variable &i?
+0391: PartV:Semaphores(Steps20-22)
+0392: Mutex vs. Semaphores: What is the main functional difference between a Mutex and a Semaphore?(Hint: Think about the "initial value").
+0393: PandVOperations:Definesem_waitandsem_postintermsoftheclassicalPandVoperations.What happens to the semaphore's internal counter in each?
+0394: Counting Semaphores: Compare your observations from Steps 20, 21, and 22. How did changing the initial value (1, 2, and 3) affect the timing and concurrency of the output?
+0397: Submission
+0399: Labreport structure
+0400: Title page. Must include UTRGV logo, student name, course number, date, instructor name, and the lab name.
+0401: Introduction.Briefoverviewofthelab.Includetheobjectivegiveninthispdf.
+0402: Lab procedure. Explain each step describing what you did and what you observed (do not copy andpastetheinstructionfromthispdf).Explaintheresults.Youmustlistthecodesnippetsofeach step followed by an explanation. Every image must be explained.
+0403: Questions. Answer the questions and cite the references. Use reliable sources (books, scientific papers, official documentation sites, etc.).
+0404: Conclusions.Restate the objective and summarize the procedure. Describe your final impression of what you practiced and learned.
+0405: References.Listofreferencesprovidedbytheinstructorandtheonesusedonthequestionsection.
+0409: Labs’ rubric

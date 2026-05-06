@@ -7,7 +7,7 @@ from shared.paths import DB_PATH, IMAGES_DIR
 from shared.employee_auth import assign_missing_employee_ids, ensure_employee_user_schema
 from shared.session_utils import set_current_user
 
-ctk.set_appearance_mode("light")
+ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
 MAX_LOGIN_ATTEMPTS = 3
@@ -21,7 +21,7 @@ class LoginUI(ctk.CTkFrame):
         self.controller = controller
 
         self.controller.title("Login")
-        self.controller.geometry("1000x600")
+        self.controller.geometry("1100x650")
 
         # Layout
         self.grid_columnconfigure(0, weight=1)
@@ -29,7 +29,7 @@ class LoginUI(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
 
         # ========== LEFT ==========
-        self.left_frame = ctk.CTkFrame(self, fg_color="#e9fbf6")
+        self.left_frame = ctk.CTkFrame(self)
         self.left_frame.grid(row=0, column=0, sticky="nsew")
 
         image_path = os.path.join(IMAGES_DIR, "pharmacy.png")
@@ -47,7 +47,7 @@ class LoginUI(ctk.CTkFrame):
         self.left_label.pack(expand=True)
 
         # ========== RIGHT ==========
-        self.right_frame = ctk.CTkFrame(self, fg_color="#ffffff")
+        self.right_frame = ctk.CTkFrame(self)
         self.right_frame.grid(row=0, column=1, sticky="nsew")
 
         self.right_frame.grid_rowconfigure(0, weight=1)
@@ -55,7 +55,7 @@ class LoginUI(ctk.CTkFrame):
         self.right_frame.grid_columnconfigure(0, weight=1)
 
         self.center_frame = ctk.CTkFrame(self.right_frame, fg_color="transparent")
-        self.center_frame.grid(row=1, column=0, sticky="nsew", padx=120)
+        self.center_frame.grid(row=1, column=0, sticky="nsew", padx=100, pady=10)
 
         # Title
         self.title_label = ctk.CTkLabel(
@@ -81,39 +81,52 @@ class LoginUI(ctk.CTkFrame):
             self.mode_frame,
             text="Customer Login",
             height=34,
-            fg_color="#1f9f8a",
-            hover_color="#188272",
             command=self.use_standard_login
         )
         self.standard_login_button.grid(row=0, column=0, padx=(0, 5), sticky="ew")
+        self.standard_login_button.configure(state="disabled")
 
         self.employee_login_button = ctk.CTkButton(
             self.mode_frame,
             text="Employee Login",
             height=34,
-            fg_color="#d9f2ec",
-            hover_color="#c2e8df",
-            text_color="#114d48",
+            fg_color="#2f2f2f",
+            hover_color="#3a3a3a",
             command=self.use_employee_login
         )
         self.employee_login_button.grid(row=0, column=1, padx=(5, 0), sticky="ew")
 
         # Email
-        self.email_entry = ctk.CTkEntry(
+        self.email_entry_standard = ctk.CTkEntry(
             self.center_frame,
             placeholder_text="Email or Username",
             height=40
         )
-        self.email_entry.pack(fill="x", pady=10)
+        self.email_entry_standard.pack(fill="x", pady=10)
+
+        self.email_entry_employee = ctk.CTkEntry(
+            self.center_frame,
+            placeholder_text="Employee ID",
+            height=40
+        )
+        self.email_entry_employee.pack_forget()
 
         # Password
-        self.password_entry = ctk.CTkEntry(
+        self.password_entry_standard = ctk.CTkEntry(
             self.center_frame,
             placeholder_text="Password",
             show="*",
             height=40
         )
-        self.password_entry.pack(fill="x", pady=10)
+        self.password_entry_standard.pack(fill="x", pady=10)
+
+        self.password_entry_employee = ctk.CTkEntry(
+            self.center_frame,
+            placeholder_text="Password",
+            show="*",
+            height=40
+        )
+        self.password_entry_employee.pack_forget()
 
         # Options
         self.options_frame = ctk.CTkFrame(self.center_frame, fg_color="transparent")
@@ -186,29 +199,51 @@ class LoginUI(ctk.CTkFrame):
 
     def use_standard_login(self):
         self.login_mode = "standard"
-        self.email_entry.configure(placeholder_text="Email or Username")
+
+        self.standard_login_button.configure(state="disabled")
+        self.employee_login_button.configure(state="normal")
+
+        self.email_entry_standard.pack(after=self.email_entry_employee, fill="x", pady=10)
+        self.email_entry_employee.pack_forget()
+        self.email_entry_standard.configure(placeholder_text="Email or Username")
+
+        self.password_entry_standard.pack(after=self.password_entry_employee, fill="x", pady=10)
+        self.password_entry_employee.pack_forget()
+        self.password_entry_standard.configure(placeholder_text="Password")
+
+        
         self.subtitle.configure(text="Login to your account")
-        self.standard_login_button.configure(fg_color="#1f9f8a", hover_color="#188272", text_color="white")
-        self.employee_login_button.configure(fg_color="#d9f2ec", hover_color="#c2e8df", text_color="#114d48")
+        self.standard_login_button.configure(fg_color="#2f66db", hover_color="#3a73e3")
+        self.employee_login_button.configure(fg_color="#2f2f2f", hover_color="#3a3a3a")
 
     def use_employee_login(self):
         self.login_mode = "employee"
-        self.email_entry.configure(placeholder_text="Employee ID")
+
+        self.standard_login_button.configure(state="normal")
+        self.employee_login_button.configure(state="disabled")
+
+        self.email_entry_employee.pack(after=self.email_entry_standard, fill="x", pady=10)
+        self.email_entry_standard.pack_forget()
+        self.email_entry_employee.configure(placeholder_text="Employee ID")
+
+        self.password_entry_employee.pack(after=self.password_entry_standard, fill="x", pady=10)
+        self.password_entry_standard.pack_forget()
+        self.password_entry_employee.configure(placeholder_text="Password")
+
         self.subtitle.configure(text="Employee Login")
-        self.employee_login_button.configure(fg_color="#1f9f8a", hover_color="#188272", text_color="white")
-        self.standard_login_button.configure(fg_color="#d9f2ec", hover_color="#c2e8df", text_color="#114d48")
+        self.employee_login_button.configure(fg_color="#2f66db", hover_color="#3a73e3")
+        self.standard_login_button.configure(fg_color="#2f2f2f", hover_color="#3a3a3a")
 
     def login_user(self):
         from tkinter import messagebox
 
-        login_identifier = self.email_entry.get().strip()
-        password = self.password_entry.get()
+        login_identifier_standard = self.email_entry_standard.get().strip()
+        password_standard = self.password_entry_standard.get()
 
-        if login_identifier == "" or password == "":
-            messagebox.showerror("Error", "Please fill all fields")
-            return
+        login_identifier_employee = self.email_entry_employee.get().strip()
+        password_employee = self.password_entry_employee.get()
 
-        if self.is_locked_out(login_identifier):
+        if self.is_locked_out(login_identifier_standard):
             messagebox.showerror("Error", "Too many invalid attempts. Please try again later.")
             return
 
@@ -219,6 +254,12 @@ class LoginUI(ctk.CTkFrame):
         conn.commit()
 
         if self.login_mode == "employee":
+
+            if login_identifier_employee == "" or password_employee == "":
+                conn.close()
+                messagebox.showerror("Error", "Please fill all fields")
+                return
+        
             cursor.execute(
                 """
                 SELECT id, name, email, username, role, employee_id, password_setup_required
@@ -226,7 +267,7 @@ class LoginUI(ctk.CTkFrame):
                 WHERE role='employee'
                 AND lower(employee_id)=lower(?)
                 """,
-                (login_identifier,)
+                (login_identifier_employee,)
             )
             employee_account = cursor.fetchone()
 
@@ -239,10 +280,6 @@ class LoginUI(ctk.CTkFrame):
                 return
 
             user_id, name, email, username, role, employee_id, setup_required = employee_account
-            if password == "":
-                conn.close()
-                messagebox.showerror("Error", "Please fill all fields")
-                return
 
             cursor.execute(
                 """
@@ -252,9 +289,15 @@ class LoginUI(ctk.CTkFrame):
                 AND lower(employee_id)=lower(?)
                 AND password=?
                 """,
-                (login_identifier, password)
+                (login_identifier_employee, password_employee)
             )
         else:
+
+            if login_identifier_standard == "" or password_standard == "":
+                conn.close()
+                messagebox.showerror("Error", "Please fill all fields")
+                return
+        
             cursor.execute(
                 """
                 SELECT id, name, email, username, role, employee_id, password_setup_required
@@ -262,7 +305,7 @@ class LoginUI(ctk.CTkFrame):
                 WHERE (lower(username)=lower(?) OR lower(email)=lower(?))
                 AND password=?
                 """,
-                (login_identifier, login_identifier, password)
+                (login_identifier_standard, login_identifier_standard, password_standard)
             )
 
         result = cursor.fetchone()
@@ -274,7 +317,7 @@ class LoginUI(ctk.CTkFrame):
                 messagebox.showerror("Error", "Please use Sign Up or contact a manager to finish your employee account.")
                 return
 
-            self.clear_failed_attempts(login_identifier)
+            self.clear_failed_attempts(login_identifier_employee)
 
             cursor.execute(
                 "UPDATE users SET last_login=? WHERE id=?",
@@ -299,7 +342,7 @@ class LoginUI(ctk.CTkFrame):
 
         else:
             conn.close()
-            attempts_left = self.register_failed_attempt(login_identifier)
+            attempts_left = self.register_failed_attempt(login_identifier_standard)
             if attempts_left <= 0:
                 messagebox.showerror("Error", "Too many invalid attempts. Login is temporarily locked.")
             elif self.login_mode == "employee":

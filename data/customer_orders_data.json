@@ -190,5 +190,45 @@
       "tax": 4.41,
       "total": 67.41
     }
+  },
+  {
+    "purchase_id": "PUR-1006",
+    "status": "Processing",
+    "date": "May 06, 2026",
+    "customer": {
+      "full_name": "cesar lopez",
+      "phone": "123455",
+      "email": "cesar1234@example.com",
+      "city": "Brownsville",
+      "state": "Texas",
+      "zipcode": "78520",
+      "street_address": "123 East example",
+      "address": "123 East example, Brownsville Texas 78520",
+      "payment_method": "Cash on Delivery",
+      "card_name": "Cesar Lopez",
+      "username": "cesar01"
+    },
+    "notes": "Fast!!!!",
+    "items": [
+      {
+        "id": 6,
+        "name": "Allergy Pills",
+        "price": 11.0,
+        "qty": 5,
+        "image": "Allergy Pills.jpg"
+      },
+      {
+        "id": 10,
+        "name": "Multivitamins",
+        "price": 14.0,
+        "qty": 2,
+        "image": "Multivitamins.png"
+      }
+    ],
+    "summary": {
+      "subtotal": 83.0,
+      "tax": 5.81,
+      "total": 88.81
+    }
   }
 ]

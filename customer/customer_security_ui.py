@@ -7,7 +7,7 @@ from shared.paths import DB_PATH
 from shared.session_utils import get_current_user, set_current_user
 
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
@@ -87,7 +87,7 @@ class CustomerSecurityUI(ctk.CTkFrame):
             row=5, column=0, sticky="w", padx=18, pady=(10, 8)
         )
 
-        self.status_label = ctk.CTkLabel(card, text="", text_color="#7ddc7a")
+        self.status_label = ctk.CTkLabel(card, text="", text_color="#167a3f")
         self.status_label.grid(row=6, column=0, sticky="w", padx=18, pady=(0, 18))
 
     def create_protection_card(self, parent):
@@ -124,7 +124,7 @@ class CustomerSecurityUI(ctk.CTkFrame):
             command=lambda: self.set_protection_status("Remembered-device preference updated."),
         ).grid(row=3, column=0, sticky="w", padx=18, pady=8)
 
-        self.protection_status = ctk.CTkLabel(card, text="", text_color="#7ddc7a")
+        self.protection_status = ctk.CTkLabel(card, text="", text_color="#167a3f")
         self.protection_status.grid(row=4, column=0, sticky="w", padx=18, pady=(4, 18))
 
     def create_activity_card(self, parent):
@@ -146,12 +146,12 @@ class CustomerSecurityUI(ctk.CTkFrame):
         ctk.CTkButton(
             card,
             text="Sign Out of Other Devices",
-            fg_color="#5d6570",
-            hover_color="#4b535d",
+            fg_color="#2f9fdb",
+            hover_color="#2388bd",
             command=lambda: self.activity_status.configure(text="Other active sessions were signed out."),
         ).grid(row=4, column=0, sticky="w", padx=18, pady=(12, 6))
 
-        self.activity_status = ctk.CTkLabel(card, text="", text_color="#7ddc7a")
+        self.activity_status = ctk.CTkLabel(card, text="", text_color="#167a3f")
         self.activity_status.grid(row=5, column=0, sticky="w", padx=18, pady=(0, 18))
 
     def create_account_access_card(self, parent):
@@ -172,24 +172,24 @@ class CustomerSecurityUI(ctk.CTkFrame):
         ctk.CTkButton(
             card,
             text="Lock Account Temporarily",
-            fg_color="#5d6570",
-            hover_color="#4b535d",
+            fg_color="#2f9fdb",
+            hover_color="#2388bd",
             command=lambda: self.account_status.configure(text="Temporary account lock requested."),
         ).grid(row=2, column=0, sticky="w", padx=18, pady=6)
 
         ctk.CTkButton(
             card,
             text="Deactivate Account",
-            fg_color="#b22222",
-            hover_color="#8b1a1a",
+            fg_color="#d64545",
+            hover_color="#b83232",
             command=lambda: self.account_status.configure(text="Contact support to finish account deactivation."),
         ).grid(row=3, column=0, sticky="w", padx=18, pady=6)
 
-        self.account_status = ctk.CTkLabel(card, text="", text_color="#ffcc66")
+        self.account_status = ctk.CTkLabel(card, text="", text_color="#b56b00")
         self.account_status.grid(row=4, column=0, sticky="w", padx=18, pady=(4, 18))
 
     def set_protection_status(self, message):
-        self.protection_status.configure(text=message, text_color="#7ddc7a")
+        self.protection_status.configure(text=message, text_color="#167a3f")
 
     def save_password(self):
         username = self.current_user.get("username", "")
@@ -198,15 +198,15 @@ class CustomerSecurityUI(ctk.CTkFrame):
         confirm_password = self.confirm_password.get()
 
         if not username:
-            self.status_label.configure(text="No active user session found.", text_color="#ff8080")
+            self.status_label.configure(text="No active user session found.", text_color="#c62828")
             return
 
         if not current_password or not new_password or not confirm_password:
-            self.status_label.configure(text="Fill out all password fields.", text_color="#ff8080")
+            self.status_label.configure(text="Fill out all password fields.", text_color="#c62828")
             return
 
         if new_password != confirm_password:
-            self.status_label.configure(text="New passwords do not match.", text_color="#ff8080")
+            self.status_label.configure(text="New passwords do not match.", text_color="#c62828")
             return
 
         conn = sqlite3.connect(DB_PATH)
@@ -216,13 +216,13 @@ class CustomerSecurityUI(ctk.CTkFrame):
 
         if not result:
             conn.close()
-            self.status_label.configure(text="User account could not be found.", text_color="#ff8080")
+            self.status_label.configure(text="User account could not be found.", text_color="#c62828")
             return
 
         stored_password, role = result
         if current_password != stored_password:
             conn.close()
-            self.status_label.configure(text="Current password is incorrect.", text_color="#ff8080")
+            self.status_label.configure(text="Current password is incorrect.", text_color="#c62828")
             return
 
         cursor.execute("UPDATE users SET password=? WHERE username=?", (new_password, username))
@@ -235,7 +235,7 @@ class CustomerSecurityUI(ctk.CTkFrame):
         self.current_password.delete(0, "end")
         self.new_password.delete(0, "end")
         self.confirm_password.delete(0, "end")
-        self.status_label.configure(text="Password updated successfully.", text_color="#7ddc7a")
+        self.status_label.configure(text="Password updated successfully.", text_color="#167a3f")
 
     def open_dashboard(self):
         self.controller.show_page("customer_dashboard")

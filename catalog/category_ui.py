@@ -1,6 +1,8 @@
+import os
 import sqlite3
 
 import customtkinter as ctk
+from PIL import Image
 
 from catalog.category_utils import (
     CATEGORY_DISPLAY_NAMES,
@@ -8,12 +10,12 @@ from catalog.category_utils import (
     normalize_category,
     repair_inventory_categories,
 )
-from shared.paths import DB_PATH
+from shared.paths import DB_PATH, IMAGES_DIR
 from shared.image_utils import product_image_name
 from shared.session_utils import load_user_cart, save_user_cart
 
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 SIDEBAR_ITEM_WIDTH = 150
@@ -64,6 +66,7 @@ class CategoryUI(ctk.CTkFrame):
 
         self.cart = {}
         self.feedback_labels = {}
+        self.image_refs = []
 
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
@@ -72,13 +75,13 @@ class CategoryUI(ctk.CTkFrame):
         self.create_topbar()
         self.create_sidebar()
 
-        self.content = ctk.CTkScrollableFrame(self)
+        self.content = ctk.CTkScrollableFrame(self, fg_color="#f6fbf9")
         self.content.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
 
         self.load_items()
 
     def create_topbar(self):
-        header = ctk.CTkFrame(self, height=70)
+        header = ctk.CTkFrame(self, height=70, fg_color="#e4f7f0")
         header.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=(10, 0))
         header.grid_columnconfigure(1, weight=1)
 
@@ -95,7 +98,7 @@ class CategoryUI(ctk.CTkFrame):
         self.update_cart_button()
 
     def create_sidebar(self):
-        sidebar = ctk.CTkFrame(self, width=220)
+        sidebar = ctk.CTkFrame(self, width=220, fg_color="#dcf4ec")
         sidebar.grid(row=1, column=0, sticky="ns", padx=(10, 0), pady=10)
         sidebar.grid_propagate(False)
 
@@ -112,7 +115,7 @@ class CategoryUI(ctk.CTkFrame):
             fg_color="transparent",
             hover=False,
             state="disabled",
-            text_color_disabled="white",
+            text_color_disabled="#114d48",
             border_width=0,
             corner_radius=0,
         ).pack(anchor="w", pady=(0, 24))
@@ -134,7 +137,7 @@ class CategoryUI(ctk.CTkFrame):
         ).pack(anchor="w")
 
     def create_header(self):
-        header = ctk.CTkFrame(self.content, fg_color="#2b2b2b")
+        header = ctk.CTkFrame(self.content, fg_color="#d6f2e8")
         header.pack(fill="x", padx=10, pady=(0, 5))
 
         headers = ["Image", "Item Name", "Price", "Stock", "Qty", "Actions"]
@@ -154,6 +157,7 @@ class CategoryUI(ctk.CTkFrame):
             widget.destroy()
 
         self.feedback_labels = {}
+        self.image_refs = []
         self.create_header()
 
         category_values = get_category_where_values(self.category)
@@ -191,14 +195,15 @@ class CategoryUI(ctk.CTkFrame):
             self.create_row(item, index)
 
     def create_row(self, data, index):
-        bg_color = "#1f1f1f" if index % 2 == 0 else "#2a2a2a"
+        bg_color = "#ffffff" if index % 2 == 0 else "#edf8f4"
 
         row = ctk.CTkFrame(self.content, fg_color=bg_color)
         row.pack(fill="x", padx=10, pady=2)
         for col, width in enumerate(TABLE_COLUMN_WIDTHS):
             row.grid_columnconfigure(col, minsize=width)
 
-        ctk.CTkLabel(row, text="IMG", anchor="w").grid(row=0, column=0, padx=5, sticky="w")
+        image_label = self.create_item_image(row, data[1])
+        image_label.grid(row=0, column=0, padx=8, pady=6, sticky="w")
         ctk.CTkLabel(row, text=data[1], anchor="w").grid(row=0, column=1, padx=5, sticky="w")
         ctk.CTkLabel(row, text=f"${data[2]}", anchor="w").grid(row=0, column=2, padx=5, sticky="w")
         ctk.CTkLabel(row, text=str(data[3]), anchor="w").grid(row=0, column=3, padx=5, sticky="w")
@@ -222,27 +227,41 @@ class CategoryUI(ctk.CTkFrame):
             text="",
             width=120,
             anchor="w",
-            text_color="#5ee07b",
+            text_color="#167a3f",
             font=ctk.CTkFont(size=12, weight="bold"),
         )
         feedback.pack(side="left", padx=(6, 0))
         self.feedback_labels[data[0]] = feedback
 
+    def create_item_image(self, parent, product_name):
+        image_name = product_image_name(product_name, CATEGORY_IMAGE_KEYS.get(self.category, "Paracetamol.png"))
+        image_path = os.path.join(IMAGES_DIR, image_name)
+
+        try:
+            image = Image.open(image_path)
+        except (FileNotFoundError, OSError):
+            image = Image.new("RGB", (58, 58), "#e4eef5")
+
+        item_image = ctk.CTkImage(light_image=image, size=(58, 58))
+        self.image_refs.append(item_image)
+
+        return ctk.CTkLabel(parent, image=item_image, text="", width=58, height=58)
+
     def add_to_cart(self, data, qty_entry):
         try:
             qty = int(qty_entry.get())
         except ValueError:
-            self.show_add_feedback(data[0], "Enter a number", "#ffb347")
+            self.show_add_feedback(data[0], "Enter a number", "#b56b00")
             return
 
         if qty <= 0:
-            self.show_add_feedback(data[0], "Qty must be 1+", "#ffb347")
+            self.show_add_feedback(data[0], "Qty must be 1+", "#b56b00")
             return
 
         self.cart[data[0]] = self.cart.get(data[0], 0) + qty
         self.save_cart_item(data, qty)
         self.update_cart_button()
-        self.show_add_feedback(data[0], f"Added {qty} to cart", "#5ee07b")
+        self.show_add_feedback(data[0], f"Added {qty} to cart", "#167a3f")
 
     def show_add_feedback(self, item_id, message, color):
         label = self.feedback_labels.get(item_id)

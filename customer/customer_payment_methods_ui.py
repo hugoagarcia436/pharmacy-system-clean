@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from shared.session_utils import load_payment_methods, save_payment_methods
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
@@ -94,9 +94,9 @@ class CustomerPaymentMethodsUI(ctk.CTkFrame):
         buttons.grid(row=12, column=0, sticky="w", padx=20, pady=(10, 8))
 
         ctk.CTkButton(buttons, text="Save Method", command=self.save_profile).pack(side="left", padx=(0, 10))
-        ctk.CTkButton(buttons, text="Clear", fg_color="gray", hover_color="#555555", command=self.reset_form).pack(side="left")
+        ctk.CTkButton(buttons, text="Clear", fg_color="#7a8d99", hover_color="#657783", command=self.reset_form).pack(side="left")
 
-        self.status_label = ctk.CTkLabel(right, text="", text_color="#7ddc7a")
+        self.status_label = ctk.CTkLabel(right, text="", text_color="#167a3f")
         self.status_label.grid(row=13, column=0, sticky="w", padx=20, pady=(0, 20))
 
         self.refresh_methods()
@@ -133,8 +133,8 @@ class CustomerPaymentMethodsUI(ctk.CTkFrame):
                 actions,
                 text="Delete",
                 width=70,
-                fg_color="#b22222",
-                hover_color="#8b1a1a",
+                fg_color="#d64545",
+                hover_color="#b83232",
                 command=lambda name=profile_name: self.delete_profile(name)
             ).pack(side="left", padx=4)
 
@@ -182,7 +182,7 @@ class CustomerPaymentMethodsUI(ctk.CTkFrame):
     def save_profile(self):
         profile_name = self.profile_name.get().strip()
         if not profile_name:
-            self.status_label.configure(text="Enter a payment profile name first.", text_color="#ff8080")
+            self.status_label.configure(text="Enter a payment profile name first.", text_color="#c62828")
             return
 
         if self.selected_profile and self.selected_profile != profile_name:
@@ -203,7 +203,7 @@ class CustomerPaymentMethodsUI(ctk.CTkFrame):
         save_payment_methods(self.payment_profiles)
         self.selected_profile = profile_name
         self.refresh_methods()
-        self.status_label.configure(text=f"Saved payment method: {profile_name}", text_color="#7ddc7a")
+        self.status_label.configure(text=f"Saved payment method: {profile_name}", text_color="#167a3f")
 
     def delete_profile(self, profile_name):
         if profile_name in self.payment_profiles:
@@ -212,7 +212,7 @@ class CustomerPaymentMethodsUI(ctk.CTkFrame):
             if self.selected_profile == profile_name:
                 self.reset_form()
             self.refresh_methods()
-            self.status_label.configure(text=f"Deleted payment method: {profile_name}", text_color="#7ddc7a")
+            self.status_label.configure(text=f"Deleted payment method: {profile_name}", text_color="#167a3f")
 
     def open_dashboard(self):
         self.controller.show_page("customer_dashboard")

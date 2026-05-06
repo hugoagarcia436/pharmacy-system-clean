@@ -8,7 +8,7 @@ from shared.image_utils import DEFAULT_PRODUCT_IMAGE, product_image_name
 from shared.paths import DB_PATH, IMAGES_DIR
 from shared.session_utils import get_current_username, load_all_orders, load_user_cart, save_user_cart
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 class CustomerOrdersUI(ctk.CTkFrame):
@@ -72,7 +72,8 @@ class CustomerOrdersUI(ctk.CTkFrame):
                 text=order["purchase_id"],
                 width=160,
                 fg_color="transparent",
-                hover_color="#3a3a3a",
+                hover_color="#d6f2e8",
+                text_color="#114d48",
                 anchor="w",
                 command=lambda current_order=order: self.show_order_history(current_order)
             )
@@ -80,7 +81,7 @@ class CustomerOrdersUI(ctk.CTkFrame):
 
             items_text = ", ".join(item["name"] for item in order["items"])
 
-            ctk.CTkLabel(card, text=f"Status: {order['status']}", text_color="#7ddc7a").grid(row=1, column=1, sticky="w", padx=8, pady=2)
+            ctk.CTkLabel(card, text=f"Status: {order['status']}", text_color="#167a3f").grid(row=1, column=1, sticky="w", padx=8, pady=2)
             ctk.CTkLabel(card, text=f"Date: {order['date']}", text_color="gray").grid(row=2, column=1, sticky="w", padx=8, pady=2)
             ctk.CTkLabel(card, text=f"Items: {items_text}", wraplength=900, justify="left").grid(row=3, column=1, sticky="w", padx=8, pady=(2, 14))
 
@@ -109,7 +110,7 @@ class CustomerOrdersUI(ctk.CTkFrame):
                 text=f"+{remaining_count}",
                 width=74,
                 height=74,
-                fg_color="#343a40",
+                fg_color="#e4eef5",
                 corner_radius=8,
                 font=("Arial", 16, "bold")
             ).grid(row=0, column=len(shown_items), padx=(0, 8))
@@ -124,7 +125,7 @@ class CustomerOrdersUI(ctk.CTkFrame):
         try:
             image = Image.open(image_path)
         except (FileNotFoundError, OSError):
-            image = Image.new("RGB", size, "#3a3a3a")
+            image = Image.new("RGB", size, "#e4eef5")
 
         ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=size)
         self.image_refs.append(ctk_image)
@@ -158,7 +159,7 @@ class CustomerOrdersUI(ctk.CTkFrame):
         body.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
         body.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(body, text=f"Status: {order['status']}", text_color="#7ddc7a").pack(anchor="w", padx=15, pady=(15, 4))
+        ctk.CTkLabel(body, text=f"Status: {order['status']}", text_color="#167a3f").pack(anchor="w", padx=15, pady=(15, 4))
         ctk.CTkLabel(body, text=f"Date: {order['date']}", text_color="gray").pack(anchor="w", padx=15, pady=4)
         ctk.CTkLabel(body, text=f"Customer: {order['customer']['full_name']}").pack(anchor="w", padx=15, pady=4)
         ctk.CTkLabel(body, text=f"Phone: {order['customer']['phone']}").pack(anchor="w", padx=15, pady=4)

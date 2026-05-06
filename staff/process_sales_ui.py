@@ -11,7 +11,7 @@ from shared.paths import DB_PATH, RECEIPTS_DIR
 from shared.session_utils import get_current_user, load_all_orders, save_all_orders
 from staff.sidebar_ui import EmployeeSidebar
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
@@ -117,8 +117,8 @@ class ProcessSalesUI(ctk.CTkFrame):
             sale_panel,
             text="Add Customer Info",
             width=160,
-            fg_color="#5d6570",
-            hover_color="#4b535d",
+            fg_color="#2f9fdb",
+            hover_color="#2388bd",
             command=self.toggle_customer_info
         )
         self.customer_toggle.grid(row=2, column=0, sticky="w", padx=15, pady=6)
@@ -159,7 +159,7 @@ class ProcessSalesUI(ctk.CTkFrame):
         self.total_label = ctk.CTkLabel(sale_panel, text="Total: $0.00", font=ctk.CTkFont(size=18, weight="bold"))
         self.total_label.grid(row=9, column=0, sticky="w", padx=15, pady=(8, 4))
 
-        self.status_label = ctk.CTkLabel(sale_panel, text="", text_color="#7ddc7a", wraplength=430, justify="left")
+        self.status_label = ctk.CTkLabel(sale_panel, text="", text_color="#167a3f", wraplength=430, justify="left")
         self.status_label.grid(row=10, column=0, sticky="w", padx=15, pady=4)
 
         ctk.CTkButton(
@@ -320,8 +320,8 @@ class ProcessSalesUI(ctk.CTkFrame):
                 row,
                 text="Remove",
                 width=80,
-                fg_color="#8b0000",
-                hover_color="#a00000",
+                fg_color="#d64545",
+                hover_color="#b83232",
                 command=lambda item_id=item["id"]: self.remove_from_sale(item_id)
             ).grid(row=0, column=1, rowspan=2, padx=10, pady=8)
 
@@ -486,8 +486,8 @@ class ProcessSalesUI(ctk.CTkFrame):
         ctk.CTkButton(
             button_bar,
             text="Cancel",
-            fg_color="gray",
-            hover_color="#555555",
+            fg_color="#7a8d99",
+            hover_color="#657783",
             command=preview.destroy
         ).grid(row=0, column=2, padx=(6, 0), sticky="ew")
 

@@ -5,7 +5,7 @@ from datetime import datetime
 from shared.paths import ORDERS_FILE
 from staff.sidebar_ui import EmployeeSidebar
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 

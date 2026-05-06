@@ -15,7 +15,7 @@ from shared.session_utils import (
     load_payment_methods,
 )
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 class CheckoutUI(ctk.CTkFrame):
@@ -162,7 +162,7 @@ class CheckoutUI(ctk.CTkFrame):
         )
         self.save_details_checkbox.grid(row=7, column=0, sticky="w", padx=20, pady=(0, 8))
 
-        self.status_label = ctk.CTkLabel(left, text="", text_color="#7ddc7a")
+        self.status_label = ctk.CTkLabel(left, text="", text_color="#167a3f")
         self.status_label.grid(row=8, column=0, sticky="w", padx=20, pady=(0, 8))
 
         ctk.CTkButton(

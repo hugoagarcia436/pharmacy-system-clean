@@ -6,7 +6,7 @@ from shared.paths import IMAGES_DIR
 from shared.image_utils import DEFAULT_PRODUCT_IMAGE
 from shared.session_utils import load_user_cart, save_user_cart
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 class CartUI(ctk.CTkFrame):
@@ -110,7 +110,7 @@ class CartUI(ctk.CTkFrame):
         if os.path.exists(image_path):
             image = Image.open(image_path)
         else:
-            image = Image.new("RGB", (110, 80), "#3a3a3a")
+            image = Image.new("RGB", (110, 80), "#e4eef5")
 
         img = ctk.CTkImage(light_image=image, size=(110, 80))
         image_label = ctk.CTkLabel(card, image=img, text="")

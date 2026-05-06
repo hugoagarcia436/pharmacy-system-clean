@@ -7,7 +7,7 @@ from shared.paths import DB_PATH, IMAGES_DIR
 from shared.employee_auth import assign_missing_employee_ids, ensure_employee_user_schema
 from shared.session_utils import set_current_user
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 MAX_LOGIN_ATTEMPTS = 3
@@ -29,7 +29,7 @@ class LoginUI(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
 
         # ========== LEFT ==========
-        self.left_frame = ctk.CTkFrame(self)
+        self.left_frame = ctk.CTkFrame(self, fg_color="#e9fbf6")
         self.left_frame.grid(row=0, column=0, sticky="nsew")
 
         image_path = os.path.join(IMAGES_DIR, "pharmacy.png")
@@ -47,7 +47,7 @@ class LoginUI(ctk.CTkFrame):
         self.left_label.pack(expand=True)
 
         # ========== RIGHT ==========
-        self.right_frame = ctk.CTkFrame(self)
+        self.right_frame = ctk.CTkFrame(self, fg_color="#ffffff")
         self.right_frame.grid(row=0, column=1, sticky="nsew")
 
         self.right_frame.grid_rowconfigure(0, weight=1)
@@ -81,6 +81,8 @@ class LoginUI(ctk.CTkFrame):
             self.mode_frame,
             text="Customer Login",
             height=34,
+            fg_color="#1f9f8a",
+            hover_color="#188272",
             command=self.use_standard_login
         )
         self.standard_login_button.grid(row=0, column=0, padx=(0, 5), sticky="ew")
@@ -89,8 +91,9 @@ class LoginUI(ctk.CTkFrame):
             self.mode_frame,
             text="Employee Login",
             height=34,
-            fg_color="#2f2f2f",
-            hover_color="#3a3a3a",
+            fg_color="#d9f2ec",
+            hover_color="#c2e8df",
+            text_color="#114d48",
             command=self.use_employee_login
         )
         self.employee_login_button.grid(row=0, column=1, padx=(5, 0), sticky="ew")
@@ -185,15 +188,15 @@ class LoginUI(ctk.CTkFrame):
         self.login_mode = "standard"
         self.email_entry.configure(placeholder_text="Email or Username")
         self.subtitle.configure(text="Login to your account")
-        self.standard_login_button.configure(fg_color="#2f66db", hover_color="#3a73e3")
-        self.employee_login_button.configure(fg_color="#2f2f2f", hover_color="#3a3a3a")
+        self.standard_login_button.configure(fg_color="#1f9f8a", hover_color="#188272", text_color="white")
+        self.employee_login_button.configure(fg_color="#d9f2ec", hover_color="#c2e8df", text_color="#114d48")
 
     def use_employee_login(self):
         self.login_mode = "employee"
         self.email_entry.configure(placeholder_text="Employee ID")
         self.subtitle.configure(text="Employee Login")
-        self.employee_login_button.configure(fg_color="#2f66db", hover_color="#3a73e3")
-        self.standard_login_button.configure(fg_color="#2f2f2f", hover_color="#3a3a3a")
+        self.employee_login_button.configure(fg_color="#1f9f8a", hover_color="#188272", text_color="white")
+        self.standard_login_button.configure(fg_color="#d9f2ec", hover_color="#c2e8df", text_color="#114d48")
 
     def login_user(self):
         from tkinter import messagebox

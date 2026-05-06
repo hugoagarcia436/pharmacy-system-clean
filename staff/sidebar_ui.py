@@ -3,12 +3,13 @@ import customtkinter as ctk
 from shared.session_utils import clear_current_user
 
 
-SIDEBAR_COLOR = "#161b31"
-BUTTON_COLOR = "#2f66db"
-BUTTON_HOVER = "#3a73e3"
-ACTIVE_BUTTON = "#4b83e7"
-LOGOUT_COLOR = "#8b1e1e"
-LOGOUT_HOVER = "#a82828"
+SIDEBAR_COLOR = "#e5f7f2"
+BUTTON_COLOR = "#ffffff"
+BUTTON_HOVER = "#d6f2e8"
+ACTIVE_BUTTON = "#b7ded4"
+BUTTON_TEXT = "#114d48"
+LOGOUT_COLOR = "#d64545"
+LOGOUT_HOVER = "#b83232"
 
 
 class EmployeeSidebar(ctk.CTkFrame):
@@ -51,6 +52,9 @@ class EmployeeSidebar(ctk.CTkFrame):
             height=42,
             fg_color=ACTIVE_BUTTON if is_active else BUTTON_COLOR,
             hover_color=BUTTON_HOVER,
+            text_color=BUTTON_TEXT,
+            border_width=1,
+            border_color="#b7ded4",
             corner_radius=8,
             command=None if is_active else lambda: self.controller.show_page(page_name)
         ).pack(fill="x", padx=18, pady=8)

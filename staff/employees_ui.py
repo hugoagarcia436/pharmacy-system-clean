@@ -11,7 +11,7 @@ from shared.employee_auth import (
 from shared.paths import DB_PATH
 from staff.sidebar_ui import EmployeeSidebar
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
@@ -382,7 +382,7 @@ class EmployeesUI(ctk.CTkFrame):
         unassigned = sum(1 for emp in employees if emp["shift"] == "Unassigned")
         pending = sum(1 for emp in employees if "pending" in emp["activity"].lower())
 
-        self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#1f1f1f", corner_radius=10)
+        self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#f2fbf8", corner_radius=10)
         self.detail_frame.grid(row=0, column=0, sticky="ew")
         self.detail_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
@@ -409,7 +409,7 @@ class EmployeesUI(ctk.CTkFrame):
         ]
 
         for index, (title, value, subtitle) in enumerate(stats):
-            card = ctk.CTkFrame(self.detail_frame, fg_color="#252525", corner_radius=8)
+            card = ctk.CTkFrame(self.detail_frame, fg_color="#ffffff", corner_radius=8)
             card.grid(row=2 + index // 4, column=index % 4, padx=10, pady=(8, 12), sticky="nsew")
             card.grid_columnconfigure(0, weight=1)
 
@@ -451,7 +451,7 @@ class EmployeesUI(ctk.CTkFrame):
         header.grid(row=0, column=0, sticky="ew")
         
         # ===== LINE UNDER HEADER =====
-        separator = ctk.CTkFrame(table, height=2, fg_color="#3a3a3a")
+        separator = ctk.CTkFrame(table, height=2, fg_color="#b7ded4")
         separator.grid(row=1, column=0, sticky="ew", pady=(0, 6))
 
         for i, w in enumerate(col_widths):
@@ -475,7 +475,7 @@ class EmployeesUI(ctk.CTkFrame):
             return
 
         for i, emp in enumerate(self.filtered_employees, start=2):
-            bg = "#2b2b2b" if (i - 1) % 2 == 0 else "#242424"
+            bg = "#ffffff" if (i - 1) % 2 == 0 else "#edf8f4"
 
             row = ctk.CTkFrame(table, fg_color=bg, corner_radius=8)
             row.grid(row=i, column=0, sticky="ew", pady=3)
@@ -483,11 +483,11 @@ class EmployeesUI(ctk.CTkFrame):
             for j, w in enumerate(col_widths):
                 row.grid_columnconfigure(j, minsize=w, weight=1 if j in [1, 5] else 0)
 
-            status_color = "#00c853"
+            status_color = "#167a3f"
             if emp["status"] == "On Leave":
-                status_color = "#f4b400"
+                status_color = "#b56b00"
             elif emp["status"] == "Suspended":
-                status_color = "#ff4d4f"
+                status_color = "#c62828"
 
             values = [
                 emp["id"],
@@ -499,7 +499,7 @@ class EmployeesUI(ctk.CTkFrame):
 
             for col, val in enumerate(values):
                 anchor = "w" if col in [0, 1] else "center"
-                color = status_color if col == 4 else "white"
+                color = status_color if col == 4 else "#263238"
 
                 ctk.CTkLabel(
                     row,
@@ -526,13 +526,15 @@ class EmployeesUI(ctk.CTkFrame):
             ).pack(side="left", padx=3)
 
             status_btn_text = "Suspend" if emp["status"] == "Active" else "Activate"
-            status_btn_color = "#8b0000" if emp["status"] == "Active" else "#2e7d32"
+            status_btn_color = "#d64545" if emp["status"] == "Active" else "#2e9d58"
+            status_btn_hover = "#b83232" if emp["status"] == "Active" else "#247d45"
 
             ctk.CTkButton(
                 actions,
                 text=status_btn_text,
                 width=80,
                 fg_color=status_btn_color,
+                hover_color=status_btn_hover,
                 command=lambda e=emp: self.toggle_employee_status(e)
             ).pack(side="left", padx=3)
 
@@ -573,7 +575,7 @@ class EmployeesUI(ctk.CTkFrame):
         self.remove_details()
         self.detail_mode = "detail"
 
-        self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#1f1f1f", corner_radius=10)
+        self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#f2fbf8", corner_radius=10)
         self.detail_frame.grid(row=0, column=0, sticky="ew")
         self.detail_frame.grid_columnconfigure((0, 1, 2), weight=1)
 
@@ -584,7 +586,7 @@ class EmployeesUI(ctk.CTkFrame):
         ).grid(row=0, column=0, columnspan=3, padx=15, pady=(12, 10), sticky="w")
 
         # basic info
-        left = ctk.CTkFrame(self.detail_frame, fg_color="#252525")
+        left = ctk.CTkFrame(self.detail_frame, fg_color="#ffffff")
         left.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
         ctk.CTkLabel(left, text="Basic Info", font=ctk.CTkFont(weight="bold"))\
@@ -595,7 +597,7 @@ class EmployeesUI(ctk.CTkFrame):
         ctk.CTkLabel(left, text=f"Email: {emp['email']}").grid(row=4, column=0, padx=12, pady=(4, 10), sticky="w")
 
         # work info
-        middle = ctk.CTkFrame(self.detail_frame, fg_color="#252525")
+        middle = ctk.CTkFrame(self.detail_frame, fg_color="#ffffff")
         middle.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
 
         ctk.CTkLabel(middle, text="Work Info", font=ctk.CTkFont(weight="bold"))\
@@ -607,7 +609,7 @@ class EmployeesUI(ctk.CTkFrame):
         ctk.CTkLabel(middle, text=f"Username: {emp['username']}").grid(row=5, column=0, padx=12, pady=(4, 10), sticky="w")
 
         # activity
-        right = ctk.CTkFrame(self.detail_frame, fg_color="#252525")
+        right = ctk.CTkFrame(self.detail_frame, fg_color="#ffffff")
         right.grid(row=1, column=2, padx=10, pady=10, sticky="nsew")
 
         ctk.CTkLabel(right, text="Performance / Activity", font=ctk.CTkFont(weight="bold"))\
@@ -648,7 +650,7 @@ class EmployeesUI(ctk.CTkFrame):
         self.remove_details()
         self.detail_mode = "shift"
 
-        self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#1f1f1f", corner_radius=10)
+        self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#f2fbf8", corner_radius=10)
         self.detail_frame.grid(row=0, column=0, sticky="ew")
         self.detail_frame.grid_columnconfigure((0, 1, 2), weight=1)
 
@@ -686,7 +688,7 @@ class EmployeesUI(ctk.CTkFrame):
         self.remove_details()
         self.detail_mode = "add"
 
-        self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#1f1f1f", corner_radius=10)
+        self.detail_frame = ctk.CTkFrame(self.detail_host, fg_color="#f2fbf8", corner_radius=10)
         self.detail_frame.grid(row=0, column=0, sticky="ew")
         self.detail_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
 

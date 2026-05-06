@@ -16,7 +16,7 @@ from shared.paths import DB_PATH
 from staff.sidebar_ui import EmployeeSidebar
 
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
@@ -169,7 +169,7 @@ class InventoryHubUI(ctk.CTkFrame):
             row=6, column=0, sticky="ew", padx=14, pady=(12, 6)
         )
 
-        self.inventory_status_label = ctk.CTkLabel(detail, text="", text_color="#7ddc7a", justify="left")
+        self.inventory_status_label = ctk.CTkLabel(detail, text="", text_color="#167a3f", justify="left")
         self.inventory_status_label.grid(row=7, column=0, sticky="w", padx=14, pady=(0, 14))
 
         self.refresh_inventory_list()
@@ -216,7 +216,7 @@ class InventoryHubUI(ctk.CTkFrame):
             row=3, column=0, sticky="ew", padx=14, pady=(12, 6)
         )
 
-        self.order_status_label = ctk.CTkLabel(restock_panel, text="", text_color="#7ddc7a", justify="left")
+        self.order_status_label = ctk.CTkLabel(restock_panel, text="", text_color="#167a3f", justify="left")
         self.order_status_label.grid(row=4, column=0, sticky="w", padx=14, pady=(0, 14))
 
         self.refresh_stock_orders()
@@ -300,7 +300,7 @@ class InventoryHubUI(ctk.CTkFrame):
             values = [f"ORD-{item_id}  {name}", str(stock), str(sold or 0), status]
             for col, value in enumerate(values):
                 _, _, anchor = STOCK_ORDER_COLUMNS[col]
-                color = inventory_status_color(status) if col == 3 else "white"
+                color = inventory_status_color(status) if col == 3 else "#263238"
                 ctk.CTkLabel(row, text=value, text_color=color, anchor=anchor).grid(
                     row=0, column=col, sticky="ew", padx=10, pady=9
                 )
@@ -318,7 +318,7 @@ class InventoryHubUI(ctk.CTkFrame):
             )
 
     def basic_row(self, parent, row_index, columns):
-        row = ctk.CTkFrame(parent, fg_color="#2b2b2b" if row_index % 2 else "#242424", corner_radius=8)
+        row = ctk.CTkFrame(parent, fg_color="#ffffff" if row_index % 2 else "#edf8f4", corner_radius=8)
         row.grid(row=row_index, column=0, sticky="ew", pady=3)
         for col, (_, width, _) in enumerate(columns):
             row.grid_columnconfigure(col, minsize=width, weight=0)
@@ -339,7 +339,7 @@ class InventoryHubUI(ctk.CTkFrame):
 
         for col, value in enumerate(values):
             _, _, anchor = INVENTORY_COLUMNS[col]
-            color = inventory_status_color(status) if col == 4 else "white"
+            color = inventory_status_color(status) if col == 4 else "#263238"
             ctk.CTkLabel(row, text=value, text_color=color, anchor=anchor).grid(
                 row=0, column=col, sticky="ew", padx=10, pady=9
             )
@@ -365,7 +365,7 @@ class InventoryHubUI(ctk.CTkFrame):
 
     def save_selected_inventory_item(self):
         if self.selected_inventory_item is None:
-            self.inventory_status_label.configure(text="Select an item first.", text_color="#ff8080")
+            self.inventory_status_label.configure(text="Select an item first.", text_color="#c62828")
             return
 
         item_id = self.selected_inventory_item[0]
@@ -379,11 +379,11 @@ class InventoryHubUI(ctk.CTkFrame):
             price = float(price_text)
             stock = int(stock_text)
         except ValueError:
-            self.inventory_status_label.configure(text="Enter a valid price and stock quantity.", text_color="#ff8080")
+            self.inventory_status_label.configure(text="Enter a valid price and stock quantity.", text_color="#c62828")
             return
 
         if not name or price < 0 or stock < 0:
-            self.inventory_status_label.configure(text="Name is required. Price and stock cannot be negative.", text_color="#ff8080")
+            self.inventory_status_label.configure(text="Name is required. Price and stock cannot be negative.", text_color="#c62828")
             return
 
         self.cursor.execute(
@@ -392,7 +392,7 @@ class InventoryHubUI(ctk.CTkFrame):
         )
         set_inventory_stock(self.cursor, item_id, stock, "Inventory Hub update")
         self.conn.commit()
-        self.inventory_status_label.configure(text="Item saved successfully.", text_color="#7ddc7a")
+        self.inventory_status_label.configure(text="Item saved successfully.", text_color="#167a3f")
         self.refresh_all()
 
     def select_order_item(self, item):
@@ -412,23 +412,23 @@ class InventoryHubUI(ctk.CTkFrame):
 
     def receive_selected_stock(self):
         if self.selected_order_item is None:
-            self.order_status_label.configure(text="Select an item to restock first.", text_color="#ff8080")
+            self.order_status_label.configure(text="Select an item to restock first.", text_color="#c62828")
             return
 
         try:
             quantity = int(self.restock_qty.get())
         except ValueError:
-            self.order_status_label.configure(text="Enter a valid quantity.", text_color="#ff8080")
+            self.order_status_label.configure(text="Enter a valid quantity.", text_color="#c62828")
             return
 
         if quantity <= 0:
-            self.order_status_label.configure(text="Quantity must be greater than zero.", text_color="#ff8080")
+            self.order_status_label.configure(text="Quantity must be greater than zero.", text_color="#c62828")
             return
 
         item_id = self.selected_order_item[0]
         receive_inventory(self.cursor, item_id, quantity, "Inventory Hub stock receipt")
         self.conn.commit()
-        self.order_status_label.configure(text=f"Received {quantity} units.", text_color="#7ddc7a")
+        self.order_status_label.configure(text=f"Received {quantity} units.", text_color="#167a3f")
         self.restock_qty.delete(0, "end")
         self.refresh_all()
 

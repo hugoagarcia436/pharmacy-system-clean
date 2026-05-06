@@ -1,6 +1,5 @@
 import sqlite3
  
- 
 import customtkinter as ctk
 
 from shared.paths import DB_PATH
@@ -12,7 +11,7 @@ from shared.session_utils import (
 )
 
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
@@ -124,12 +123,12 @@ class CustomerProfileUI(ctk.CTkFrame):
             actions,
             text="Cancel",
             height=40,
-            fg_color="gray",
-            hover_color="#555555",
+            fg_color="#7a8d99",
+            hover_color="#657783",
             command=self.open_account,
         ).pack(side="left")
 
-        self.status_label = ctk.CTkLabel(main, text="", text_color="#7ddc7a")
+        self.status_label = ctk.CTkLabel(main, text="", text_color="#167a3f")
         self.status_label.grid(row=4, column=0, columnspan=2, sticky="w", padx=20, pady=(0, 20))
 
     def prefill_profile(self):
@@ -196,11 +195,11 @@ class CustomerProfileUI(ctk.CTkFrame):
         phone = self.phone.get().strip()
 
         if not username:
-            self.status_label.configure(text="No active user session found.", text_color="#ff8080")
+            self.status_label.configure(text="No active user session found.", text_color="#c62828")
             return
 
         if not full_name or not email or not phone:
-            self.status_label.configure(text="Name, email, and phone number are required.", text_color="#ff8080")
+            self.status_label.configure(text="Name, email, and phone number are required.", text_color="#c62828")
             return
 
         conn = sqlite3.connect(DB_PATH)
@@ -234,7 +233,7 @@ class CustomerProfileUI(ctk.CTkFrame):
         self.current_user["name"] = full_name
         self.current_user["email"] = email
         set_current_user(self.current_user)
-        self.status_label.configure(text="Profile updated successfully.", text_color="#7ddc7a")
+        self.status_label.configure(text="Profile updated successfully.", text_color="#167a3f")
 
     def open_dashboard(self):
         self.controller.show_page("customer_dashboard")

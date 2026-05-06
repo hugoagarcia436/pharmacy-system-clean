@@ -8,7 +8,7 @@ from tkinter import messagebox
 from shared.employee_auth import ensure_employee_user_schema
 from shared.paths import DB_PATH, IMAGES_DIR
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
@@ -31,7 +31,7 @@ class SignUpUI(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
 
         # ================= MAIN CONTAINER =================
-        self.container = ctk.CTkFrame(self, corner_radius=15)
+        self.container = ctk.CTkFrame(self, corner_radius=15, fg_color="#f2fbf8")
         self.container.grid(row=0, column=0, padx=40, pady=40, sticky="nsew")
 
         self.container.grid_columnconfigure(0, weight=1)
@@ -67,7 +67,7 @@ class SignUpUI(ctk.CTkFrame):
         self.image_label.pack()
 
         # ================= RIGHT SIDE =================
-        self.form_card = ctk.CTkFrame(self.container, corner_radius=15)
+        self.form_card = ctk.CTkFrame(self.container, corner_radius=15, fg_color="#ffffff")
         self.form_card.grid(row=0, column=1, padx=30, pady=30, sticky="nsew")
 
         self.form_card.grid_columnconfigure(0, weight=1)
@@ -146,8 +146,8 @@ class SignUpUI(ctk.CTkFrame):
             self.form_card,
             text="Cancel",
             height=40,
-            fg_color="gray",
-            hover_color="#555555",
+            fg_color="#7a8d99",
+            hover_color="#657783",
             command=self.go_back_login  
         )
         self.cancel_btn.grid(row=10, column=0, columnspan=2, padx=10, pady=(0, 20), sticky="ew")

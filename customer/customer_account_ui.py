@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from shared.session_utils import get_current_user, clear_current_user
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
@@ -61,8 +61,8 @@ class CustomerAccountUI(ctk.CTkFrame):
         ctk.CTkButton(
             logout,
             text="Log Out",
-            fg_color="red",
-            hover_color="#b30000",
+            fg_color="#d64545",
+            hover_color="#b83232",
             command=self.logout
         ).pack(anchor="w", padx=15, pady=20)
 

@@ -7,7 +7,7 @@ from shared.paths import DB_PATH, RECEIPTS_DIR
 from shared.session_utils import load_all_orders
 from staff.sidebar_ui import EmployeeSidebar
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 MULTIPLE_RECORD_WARNING_LIMIT = 5
@@ -33,7 +33,7 @@ class CustomerRecordsUI(ctk.CTkFrame):
 
         self.sidebar = EmployeeSidebar(self, self.controller, "customers")
 
-        self.main = ctk.CTkFrame(self)
+        self.main = ctk.CTkFrame(self, fg_color="#f6fbf9")
         self.main.grid(row=0, column=1, sticky="nsew")
         self.main.grid_columnconfigure(0, weight=1)
         self.main.grid_columnconfigure(1, weight=2)
@@ -109,7 +109,7 @@ class CustomerRecordsUI(ctk.CTkFrame):
         return f"name:{name.lower()}"
 
     def build_header(self):
-        header = ctk.CTkFrame(self.main)
+        header = ctk.CTkFrame(self.main, fg_color="#e4f7f0")
         header.grid(row=0, column=0, columnspan=2, sticky="ew", padx=15, pady=(15, 8))
         header.grid_columnconfigure(1, weight=1)
 
@@ -131,7 +131,7 @@ class CustomerRecordsUI(ctk.CTkFrame):
         ).grid(row=0, column=2, padx=(5, 15), pady=12)
 
     def build_customer_list(self):
-        self.list_panel = ctk.CTkFrame(self.main)
+        self.list_panel = ctk.CTkFrame(self.main, fg_color="#f2fbf8")
         self.list_panel.grid(row=1, column=0, sticky="nsew", padx=(15, 8), pady=(0, 15))
         self.list_panel.grid_columnconfigure(0, weight=1)
         self.list_panel.grid_rowconfigure(1, weight=1)
@@ -143,15 +143,15 @@ class CustomerRecordsUI(ctk.CTkFrame):
         )
         self.list_count_label.grid(row=0, column=0, sticky="w", padx=15, pady=(15, 8))
 
-        self.customer_list = ctk.CTkScrollableFrame(self.list_panel)
+        self.customer_list = ctk.CTkScrollableFrame(self.list_panel, fg_color="#f6fbf9")
         self.customer_list.grid(row=1, column=0, sticky="nsew", padx=15, pady=(0, 15))
         self.customer_list.grid_columnconfigure(0, weight=1)
 
-        self.search_message_label = ctk.CTkLabel(self.list_panel, text="", text_color="#ffb300", wraplength=420, justify="left")
+        self.search_message_label = ctk.CTkLabel(self.list_panel, text="", text_color="#b56b00", wraplength=420, justify="left")
         self.search_message_label.grid(row=2, column=0, sticky="w", padx=15, pady=(0, 12))
 
     def build_detail_panel(self):
-        self.detail_panel = ctk.CTkFrame(self.main)
+        self.detail_panel = ctk.CTkFrame(self.main, fg_color="#f2fbf8")
         self.detail_panel.grid(row=1, column=1, sticky="nsew", padx=(8, 15), pady=(0, 15))
         self.detail_panel.grid_columnconfigure(0, weight=1)
         self.detail_panel.grid_rowconfigure(1, weight=1)
@@ -201,7 +201,7 @@ class CustomerRecordsUI(ctk.CTkFrame):
             self.create_customer_card(row_index, customer)
 
     def create_customer_card(self, row_index, customer):
-        card = ctk.CTkFrame(self.customer_list)
+        card = ctk.CTkFrame(self.customer_list, fg_color="#ffffff")
         card.grid(row=row_index, column=0, sticky="ew", pady=5)
         card.grid_columnconfigure(0, weight=1)
 
@@ -221,7 +221,7 @@ class CustomerRecordsUI(ctk.CTkFrame):
         ctk.CTkLabel(
             card,
             text=f"Purchases: {len(customer.get('orders', []))}",
-            text_color="#7ddc7a"
+            text_color="#167a3f"
         ).grid(row=2, column=0, sticky="w", padx=12, pady=(2, 10))
 
         ctk.CTkButton(
@@ -316,7 +316,7 @@ class CustomerRecordsUI(ctk.CTkFrame):
         )
 
     def create_order_card(self, parent, row, order):
-        card = ctk.CTkFrame(parent)
+        card = ctk.CTkFrame(parent, fg_color="#ffffff")
         card.grid(row=row, column=0, sticky="ew", padx=10, pady=6)
         card.grid_columnconfigure(0, weight=1)
 
@@ -330,7 +330,7 @@ class CustomerRecordsUI(ctk.CTkFrame):
         ctk.CTkLabel(
             card,
             text=f"Status: {order.get('status', 'N/A')} | Total: ${order.get('summary', {}).get('total', 0):.2f}",
-            text_color="#7ddc7a"
+            text_color="#167a3f"
         ).grid(row=1, column=0, sticky="w", padx=12, pady=3)
 
         ctk.CTkLabel(
@@ -368,7 +368,7 @@ class CustomerRecordsUI(ctk.CTkFrame):
         return [os.path.join(RECEIPTS_DIR, filename) for filename in filenames]
 
     def create_receipt_card(self, parent, row, order, receipt_path):
-        card = ctk.CTkFrame(parent)
+        card = ctk.CTkFrame(parent, fg_color="#ffffff")
         card.grid(row=row, column=0, sticky="ew", padx=10, pady=6)
         card.grid_columnconfigure(0, weight=1)
 
